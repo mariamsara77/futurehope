@@ -1,7 +1,5 @@
-export default function ContactPage() {
-  return (
-    <div>
-      <h1>Contact Us</h1>
-    </div>
-  );
-}
+import type { Metadata } from "next";
+
+export const metadata: Metadata={title:"যোগাযোগ",description:"ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশনের সঙ্গে যোগাযোগের তথ্য।"};
+
+export default function ContactPage(){return <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8"><div className="max-w-3xl"><p className="text-sm font-bold text-emerald-700">যোগাযোগ</p><h1 className="mt-2 text-4xl font-bold sm:text-5xl">আমাদের সঙ্গে কথা বলুন</h1><p className="mt-5 leading-8 text-zinc-500">সংগঠনের কার্যক্রম, সহযোগিতা বা অন্যান্য বিষয়ে যোগাযোগ করতে নিচের তথ্য ব্যবহার করুন।</p></div><div className="mt-12 grid gap-5 md:grid-cols-2"><div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-zinc-200"><h2 className="text-xl font-bold">ঠিকানা</h2><p className="mt-4 leading-8 text-zinc-500">গ্রাম: ছোনবুনিয়া, ঘুটাবাছা, গোলবুনিয়া<br/>পোস্ট: কালমেঘা<br/>উপজেলা: পাথরঘাটা<br/>জেলা: বরগুনা</p></div><div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-zinc-200"><h2 className="text-xl font-bold">সরাসরি যোগাযোগ</h2><a href="tel:01340792677" className="mt-5 block rounded-xl bg-emerald-50 px-4 py-3 font-semibold text-emerald-700 hover:bg-emerald-100">০১৩৪০-৭৯২৬৭৭</a><p className="mt-4 text-sm leading-6 text-zinc-500">ফোনে যোগাযোগের সময় আপনার বিষয়টি সংক্ষেপে জানালে আমাদের জন্য সহায়ক হবে।</p></div></div></div>}
