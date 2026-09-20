@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { AuthUser, clearStoredToken, getMe, getStoredToken, login as loginApi, logout as logoutApi } from "@/lib/api";
+import { clearStoredToken, getMe, getStoredToken, login as loginApi, logout as logoutApi } from "@/lib/api";
+import type { AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
   user: AuthUser | null;
