@@ -1,132 +1,31 @@
 "use client";
-import { useState } from "react";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import AuthButton from "@/components/AuthButton";
+
+const links = [
+  { href:"/", label:"হোম" },
+  { href:"/about", label:"আমাদের সম্পর্কে" },
+  { href:"/activities", label:"কার্যক্রম" },
+  { href:"/members", label:"সদস্যবৃন্দ" },
+  { href:"/contact", label:"যোগাযোগ" },
+];
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <header className="fixed w-full top-0 z-50 bg-white/50 backdrop-blur-md shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-18">
-          <div
-            className="shrink-0 flex items-center gap-2 cursor-pointer"
-            onClick={() => window.scrollTo(0, 0)}
-          >
-            <img src="/500.png" alt="Logo" className="size-14" />
-            <span className="font-bold text-xl text-green-800 tracking-tight max-w-50 ">
-              ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশন
-            </span>
-          </div>
-
-          <nav className="hidden md:flex space-x-8">
-            <Link
-              href="#home"
-              className="text-gray-600 hover:text-green-600 font-medium transition-colors"
-            >
-              হোম
-            </Link>
-            <Link
-              href="#aim"
-              className="text-gray-600 hover:text-green-600 font-medium transition-colors"
-            >
-              আমাদের লক্ষ্য
-            </Link>
-            <Link
-              href="#activities"
-              className="text-gray-600 hover:text-green-600 font-medium transition-colors"
-            >
-              কার্যক্রম
-            </Link>
-            <Link
-              href="#committee"
-              className="text-gray-600 hover:text-green-600 font-medium transition-colors"
-            >
-              কমিটি
-            </Link>
-            <Link
-              href="#contact"
-              className="text-gray-600 hover:text-green-600 font-medium transition-colors"
-            >
-              যোগাযোগ
-            </Link>
-          </nav>
-
-          <div className="hidden md:flex">
-            <Link
-              href="#members"
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            >
-              সদস্য তালিকা
-            </Link>
-          </div>
-
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-600 hover:text-green-600 focus:outline-none"
-            >
-              <svg
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d={
-                    isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"
-                  }
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 shadow-lg absolute w-full">
-          <div className="px-4 pt-2 pb-6 space-y-2">
-            <Link
-              href="#home"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-md"
-            >
-              হোম
-            </Link>
-            <Link
-              href="#aim"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-md"
-            >
-              আমাদের লক্ষ্য
-            </Link>
-            <Link
-              href="#activities"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-md"
-            >
-              কার্যক্রম
-            </Link>
-            <Link
-              href="#committee"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-md"
-            >
-              কমিটি
-            </Link>
-            <Link
-              href="#contact"
-              onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-md"
-            >
-              যোগাযোগ
-            </Link>
-          </div>
-        </div>
-      )}
-    </header>
-  );
+  const pathname = usePathname();
+  const [open,setOpen] = useState(false);
+  return <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/95 backdrop-blur">
+    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <Link href="/" className="flex min-w-0 items-center gap-3" onClick={()=>setOpen(false)}>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-50"><img src="/500.png" alt="" className="h-9 w-9 object-contain" /></span>
+        <span className="min-w-0"><span className="block truncate text-sm font-bold text-zinc-950 sm:text-base">ফিউচার হোপ</span><span className="hidden text-xs text-zinc-500 sm:block">অ্যান্ড হিউম্যানিটি ফাউন্ডেশন</span></span>
+      </Link>
+      <nav className="hidden items-center gap-1 lg:flex" aria-label="প্রধান নেভিগেশন">{links.map(link=>{const active=link.href==="/" ? pathname==="/" : pathname.startsWith(link.href); return <Link key={link.href} href={link.href} className={`rounded-xl px-3.5 py-2 text-sm font-semibold transition ${active?"bg-emerald-50 text-emerald-700":"text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"}`}>{link.label}</Link>})}</nav>
+      <div className="hidden lg:flex"><AuthButton /></div>
+      <button aria-label={open?"মেনু বন্ধ করুন":"মেনু খুলুন"} aria-expanded={open} onClick={()=>setOpen(v=>!v)} className="rounded-xl border border-zinc-200 p-2.5 text-zinc-700 lg:hidden">{open?"×":"☰"}</button>
+    </div>
+    {open && <div className="border-t border-zinc-100 bg-white px-4 pb-4 pt-2 lg:hidden"><nav className="space-y-1">{links.map(link=><Link key={link.href} href={link.href} onClick={()=>setOpen(false)} className="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">{link.label}</Link>)}</nav><div className="mt-3 border-t border-zinc-100 pt-3"><AuthButton /></div></div>}
+  </header>;
 }
