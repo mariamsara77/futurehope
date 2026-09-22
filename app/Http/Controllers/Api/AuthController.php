@@ -92,6 +92,8 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
+        $this->ensureMemberRole($request->user());
+
         return response()->json([
             'user' => $this->formatUser($request->user()),
         ]);
@@ -120,12 +122,7 @@ class AuthController extends Controller
             $memberRole->givePermissionTo($permission);
         }
 
-        if (!$user->hasRole('admin') && !$user->hasRole('member')) {
-            $user->assignRole($memberRole);
-            return;
-        }
-
-        if ($user->hasRole('member')) {
+        if (!$user->hasRole('admin')) {
             $user->assignRole($memberRole);
         }
     }
