@@ -3,6 +3,7 @@
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Profile;
+use App\Models\Designation;
 use Flux\Flux;
 
 new class extends Component {
@@ -12,6 +13,8 @@ new class extends Component {
     public $selectedProfileId = null;
     public $status = '';
     public $viewingProfile = null;
+    public $designation_id = null;
+    public $priority = 999;
 
     public function updatingSearch()
     {
@@ -28,7 +31,9 @@ new class extends Component {
     {
         $profile = Profile::findOrFail($id);
         $this->selectedProfileId = $profile->id;
-        $this->status = $profile->status ?? 'active';
+        $this->status = $profile->status ?? 'pending';
+        $this->designation_id = $profile->designation_id;
+        $this->priority = $profile->priority ?? 999;
         
         Flux::modal('edit-biodata-modal')->show();
     }
@@ -36,19 +41,23 @@ new class extends Component {
     public function updateStatus()
     {
         $this->validate([
-            'status' => 'required|in:active,inactive,pending',
-        ]);
+            'status' => 'required|in:active,inactive,pending,rejected',
+            'designation_id' => 'nullable|exists:designations,id',
+            'priority' => 'required|integer|min:1|max:9999',
+        ];
 
         $profile = Profile::findOrFail($this->selectedProfileId);
         
         // স্পষ্টভাবে স্ট্যাটাস ফিল্ড আপডেট ও সেভ করা
         $profile->status = $this->status;
+        $profile->designation_id = $this->designation_id ?: null;
+        $profile->priority = (int) $this->priority;
         $profile->save();
 
         Flux::modal('edit-biodata-modal')->close();
         Flux::toast('Biodata status updated successfully!', variant: 'success');
         
-        $this->reset(['selectedProfileId', 'status']);
+        $this->reset(['selectedProfileId', 'status', 'designation_id', 'priority']);
     }
 
     public function deleteProfile($id)
@@ -67,6 +76,7 @@ new class extends Component {
     public function with(): array
     {
         return [
+            'designations' => Designation::where('is_active', true)->orderBy('order')->get(),
             'profiles' => Profile::with(['user.roles', 'designation'])
                 ->when($this->search, function ($query) {
                     $query->whereHas('user', function ($q) {
@@ -254,6 +264,15 @@ new class extends Component {
                 <flux:select.option value="inactive">Inactive</flux:select.option>
                 <flux:select.option value="pending">Pending</flux:select.option>
             </flux:select>
+
+            <flux:select wire:model="designation_id" label="Designation">
+                <flux:select.option value="">General Member</flux:select.option>
+                @foreach ($designations as $designation)
+                    <flux:select.option value="{{ $designation->id }}">{{ $designation->name }} ({{ $designation->order }})</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <flux:input wire:model="priority" type="number" min="1" label="Public Display Priority" />
 
             <div class="flex justify-end gap-2 pt-2">
                 <flux:modal.close>
