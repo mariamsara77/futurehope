@@ -1,14 +1,42 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
-import { demoActivities, demoPlans } from "@/data/foundation";
-import EmptyState from "@/components/EmptyState";
-export const metadata:Metadata={title:"কার্যক্রম ও পরিকল্পনা",description:"ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশনের বর্তমান কার্যক্রম, ভবিষ্যৎ পরিকল্পনা, সময়সূচি, স্থান ও দায়িত্বশীলদের তথ্য।"};
-export default function ActivitiesPage(){
- return <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 sm:py-20">
-  <div className="max-w-4xl"><p className="text-sm font-bold text-emerald-700">কার্যক্রম ও পরিকল্পনা</p><h1 className="mt-2 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">ফাউন্ডেশনের কাজ কী হচ্ছে এবং সামনে কী হবে</h1><p className="mt-6 text-lg leading-9 text-zinc-500 sm:text-xl">প্রতিটি উদ্যোগের উদ্দেশ্য, স্থান, সময়, দায়িত্বশীল টিম এবং অংশগ্রহণকারীদের তথ্য এক জায়গায় রাখার জন্য এই section তৈরি করা হয়েছে। বর্তমানে এটি demo data দিয়ে চলছে; পরে API থেকে একই কাঠামোয় live data নেওয়া যাবে।</p></div>
-  <section className="mt-16"><p className="text-sm font-bold text-emerald-700">০১ • বর্তমান কার্যক্রম</p><h2 className="mt-2 text-3xl font-bold sm:text-4xl">চলমান ও পরিকল্পিত উদ্যোগ</h2><div className="mt-8 grid gap-6 lg:grid-cols-3">{demoActivities.length?demoActivities.map(item=><article key={item.id} className="flex flex-col rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm"><div className="flex items-center justify-between"><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">{item.category}</span><span className="text-xs font-bold text-zinc-400">{item.status==="ongoing"?"চলমান":"পরিকল্পিত"}</span></div><h3 className="mt-6 text-2xl font-bold">{item.title}</h3><p className="mt-3 leading-8 text-zinc-500">{item.details}</p><div className="mt-auto space-y-2 border-t border-zinc-100 pt-6"><Info label="সময়" value={item.date}/><Info label="স্থান" value={item.location}/><Info label="প্রধান দায়িত্ব" value={item.lead}/><div className="pt-2"><p className="text-xs font-bold uppercase tracking-wide text-zinc-400">অংশগ্রহণকারী</p><div className="mt-2 flex flex-wrap gap-2">{item.members.map(m=><span key={m} className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600">{m}</span>)}</div></div></div></article>):<EmptyState/>}</div></section>
-  <section className="mt-20 rounded-3xl bg-zinc-950 p-7 text-white sm:p-10"><p className="text-sm font-bold text-emerald-300">০২ • ভবিষ্যৎ পরিকল্পনা</p><h2 className="mt-2 text-3xl font-bold sm:text-4xl">আগামী কাজের পূর্ণ তালিকা</h2><p className="mt-3 max-w-3xl leading-8 text-zinc-300">সদস্যরা যেন আগে থেকেই জানতে পারেন—কোন মাসে কী কাজ, কোথায়, কী উদ্দেশ্যে এবং কারা দায়িত্বে থাকবেন—এই অংশটি সেই তথ্যের জন্য।</p><div className="mt-8 space-y-4">{demoPlans.length?demoPlans.map((p,i)=><article key={p.id} className="rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-7"><div className="grid gap-6 lg:grid-cols-[180px_1fr_260px] lg:items-start"><div><span className="inline-flex rounded-full bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-300">পরিকল্পনা {String(i+1).padStart(2,"0")}</span><p className="mt-4 text-lg font-bold">{p.month}</p><p className="mt-1 text-sm text-zinc-400">{p.date}</p></div><div><h3 className="text-2xl font-bold">{p.title}</h3><p className="mt-3 leading-8 text-zinc-300">{p.objective}</p><p className="mt-4 text-sm text-zinc-400"><b className="text-zinc-200">স্থান:</b> {p.location}</p></div><div><p className="text-xs font-bold uppercase tracking-wide text-zinc-500">দায়িত্বশীল</p><div className="mt-3 space-y-2">{p.responsible.map(r=><div key={r} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-200">{r}</div>)}</div></div></div></article>):<EmptyState title="এখনও কোনো ভবিষ্যৎ পরিকল্পনা প্রকাশিত হয়নি"/>}</div></section>
-  <section className="mt-16 rounded-3xl border border-emerald-100 bg-emerald-50 p-7 sm:p-10"><h2 className="text-2xl font-bold text-emerald-950">পরিকল্পনার তথ্য পরে API থেকে কীভাবে আসবে?</h2><p className="mt-3 max-w-3xl leading-8 text-emerald-900/70">প্রতিটি item-এর id, title, date, location, objective, responsible এবং status আলাদা field হিসেবে রাখা হয়েছে। তাই backend endpoint তৈরি হলে demo array-এর জায়গায় API response বসানো যাবে, UI নতুন করে বানাতে হবে না।</p><Link href="/contact" className="mt-6 inline-flex rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white hover:bg-emerald-800">সমন্বয়ের জন্য যোগাযোগ</Link></section>
- </main>
+import { useEffect, useState } from "react";
+import { ApiError, getWorks, type Work } from "@/lib/api";
+
+export default function ActivitiesPage() {
+  const [works, setWorks] = useState<Work[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    getWorks().then(setWorks).catch(e => setError(e instanceof ApiError ? e.message : "কার্যক্রম আনা যায়নি।")).finally(() => setLoading(false));
+  }, []);
+
+  return <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 sm:py-20">
+    <div className="max-w-3xl">
+      <p className="text-sm font-bold text-emerald-700">কার্যক্রম</p>
+      <h1 className="mt-2 text-4xl font-bold sm:text-5xl">অনুমোদিত কাজ ও উদ্যোগ</h1>
+      <p className="mt-4 text-lg leading-8 text-zinc-500">Member vote-এর মাধ্যমে অনুমোদিত কাজগুলো এখানেই প্রকাশিত হয়। নতুন প্রস্তাব দিতে বা পুরো workflow দেখতে নিচের link ব্যবহার করুন।</p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link href="/works" className="rounded-xl bg-emerald-600 px-5 py-3 font-bold text-white hover:bg-emerald-700">কাজের প্রস্তাব দিন</Link>
+        <Link href="/how-it-works" className="rounded-xl border border-zinc-200 bg-white px-5 py-3 font-bold text-zinc-700 hover:bg-zinc-50">কীভাবে কাজ করে</Link>
+      </div>
+    </div>
+
+    {loading && <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(i=><div key={i} className="h-72 animate-pulse rounded-3xl bg-zinc-200"/>)}</div>}
+    {error && <div className="mt-10 rounded-2xl bg-red-50 px-4 py-3 text-red-700">{error}</div>}
+    {!loading && !error && works.length === 0 && <div className="mt-12 rounded-3xl border border-dashed border-zinc-300 p-10 text-center text-zinc-500">এখনও কোনো অনুমোদিত কাজ প্রকাশিত হয়নি।</div>}
+
+    {!loading && !error && works.length > 0 && <section className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {works.map(work => <article key={work.id} className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-200">
+        {work.cover_url && <img src={work.cover_url} alt="" className="h-48 w-full object-cover" />}
+        <div className="p-6">
+          <div className="flex items-center justify-between gap-3"><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{work.category || "সাধারণ"}</span><span className="text-xs font-bold text-zinc-400">{work.status}</span></div>
+          <h2 className="mt-4 text-xl font-bold">{work.title}</h2>
+          <p className="mt-2 line-clamp-4 leading-7 text-zinc-500">{work.description}</p>
+        </div>
+      </article>)}
+    </section>}
+  </main>;
 }
-function Info({label,value}:{label:string;value:string}){return <p className="text-sm text-zinc-500"><b className="text-zinc-700">{label}:</b> {value}</p>}
