@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { clearStoredToken, getMe, getStoredToken, login as loginApi, logout as logoutApi, register as registerApi } from "@/lib/api";
+import { API_BASE_URL, clearStoredToken, exchangeGoogleCode, getMe, getStoredToken, login as loginApi, logout as logoutApi, register as registerApi } from "@/lib/api";
 import type { AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
@@ -10,7 +10,9 @@ type AuthContextValue = {
   isMember: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<AuthUser | null>;
-  register: (name: string, email: string, password: string) => Promise<AuthUser | null>;
+  register: (name: string, email: string, password: string, image?: File | null) => Promise<AuthUser | null>;
+  loginWithGoogle: () => void;
+  completeGoogleLogin: (code: string) => Promise<AuthUser | null>;
   logout: (all?: boolean) => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -50,8 +52,24 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return null;
   }, [refresh]);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    const result = await registerApi(name, email, password);
+  const register = useCallback(async (name: string, email: string, password: string, image?: File | null) => {
+    const result = await registerApi(name, email, password, image);
+    if (result.user) {
+      setUser(result.user);
+      return result.user;
+    }
+    await refresh();
+    return null;
+  }, [refresh]);
+
+  const loginWithGoogle = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.location.assign(`${API_BASE_URL}/api/auth/google/redirect`);
+    }
+  }, []);
+
+  const completeGoogleLogin = useCallback(async (code: string) => {
+    const result = await exchangeGoogleCode(code);
     if (result.user) {
       setUser(result.user);
       return result.user;
@@ -77,9 +95,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     isAdmin: roles.includes("admin"),
     login,
     register,
+    loginWithGoogle,
+    completeGoogleLogin,
     logout,
     refresh,
-  }), [user, loading, roles, login, register, logout, refresh]);
+  }), [user, loading, roles, login, register, loginWithGoogle, completeGoogleLogin, logout, refresh]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
