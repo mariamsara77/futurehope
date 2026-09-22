@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
 
+Route::get('/health', fn () => response()->json(['ok' => true, 'service' => 'futurehope-api']));
 Route::get('/works', [WorkController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
