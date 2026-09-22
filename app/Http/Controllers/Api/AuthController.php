@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
@@ -27,12 +28,16 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
+        $this->ensureMemberRole($user);
+
         if ($request->hasFile('image')) {
             $this->storeAvatar($user, $request);
             $user->refresh();
         }
 
-        $token = $user->createToken($request->userAgent() ?: 'frontend')->plainTextToken;
+        $token = $user->createToken(
+            $request->userAgent() ?: 'frontend'
+        )->plainTextToken;
 
         return response()->json([
             'message' => 'রেজিস্ট্রেশন সফল। এখন আপনার প্রোফাইল পূরণ করুন।',
@@ -49,19 +54,32 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', strtolower(trim($credentials['email'])))->first();
+        $user = User::where(
+            'email',
+            strtolower(trim($credentials['email']))
+        )->first();
 
-        if (!$user || !$user->password || !Hash::check($credentials['password'], $user->password)) {
+        if (
+            !$user ||
+            !$user->password ||
+            !Hash::check($credentials['password'], $user->password)
+        ) {
             throw ValidationException::withMessages([
                 'email' => ['ইমেইল অথবা পাসওয়ার্ড ভুল।'],
             ]);
         }
 
         if ($user->status !== 'active') {
-            return response()->json(['message' => 'আপনার একাউন্ট সক্রিয় নয়।'], 403);
+            return response()->json([
+                'message' => 'আপনার একাউন্ট সক্রিয় নয়।',
+            ], 403);
         }
 
-        $token = $user->createToken($request->userAgent() ?: 'frontend')->plainTextToken;
+        $this->ensureMemberRole($user);
+
+        $token = $user->createToken(
+            $request->userAgent() ?: 'frontend'
+        )->plainTextToken;
 
         return response()->json([
             'message' => 'লগইন সফল',
@@ -92,9 +110,14 @@ class AuthController extends Controller
         return response()->json(['message' => 'সব ডিভাইস থেকে লগআউট সফল']);
     }
 
+    private function ensureMemberRole(User $user): void
+    {
+        $memberRole = Role::firstOrCreate(['name' => 'member']);
+        $user->assignRole($memberRole);
+    }
+
     private function storeAvatar(User $user, Request $request): void
     {
-        // singleFile() replaces the previous local image safely.
         $user->addMediaFromRequest('image')->toMediaCollection('avatar');
         $user->forceFill(['avatar' => null])->save();
     }
@@ -108,6 +131,7 @@ class AuthController extends Controller
             'status' => $user->status,
             'avatar' => $user->avatar_url,
             'roles' => $user->getRoleNames()->values()->all(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
         ];
     }
 }
