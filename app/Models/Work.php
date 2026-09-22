@@ -9,36 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Illuminate\Support\Str;
 
 class Work extends Model implements HasMedia
 {
     use SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
-        'user_id',
-        'category_id',
-        'title',
-        'description',
-        'status',
-        'is_published',
-        'votes_count',
-        'required_votes',
+        'user_id', 'category_id', 'submitted_name', 'submitted_email',
+        'title', 'description', 'status', 'is_published', 'votes_count', 'required_votes',
     ];
 
-    protected $casts = [
-        'is_published' => 'boolean',
-    ];
+    protected $casts = ['is_published' => 'boolean'];
 
-    protected static function boot()
+    protected static function booted(): void
     {
-        parent::boot();
-
-        static::creating(function ($work) {
-            // Auto set status to voting when created by user
-            if (empty($work->status)) {
-                $work->status = 'voting';
-            }
+        static::creating(function (Work $work) {
+            $work->status ??= 'voting';
+            $work->required_votes ??= 10;
         });
     }
 
@@ -49,29 +36,18 @@ class Work extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')
-            ->width(600)
-            ->height(400)
-            ->sharpen(10);
+        $this->addMediaConversion('thumb')->width(600)->height(400)->sharpen(10);
     }
 
-    // Relationships
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+    public function user(): BelongsTo { return $this->belongsTo(User::class); }
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(WorkCategory::class, 'category_id');
     }
 
-    public function votes(): HasMany
-    {
-        return $this->hasMany(WorkVote::class);
-    }
+    public function votes(): HasMany { return $this->hasMany(WorkVote::class); }
 
-    // Helpers
     public function hasUserVoted(int $userId): bool
     {
         return $this->votes()->where('user_id', $userId)->exists();
@@ -79,11 +55,8 @@ class Work extends Model implements HasMedia
 
     public function checkAutoApprove(): void
     {
-        if ($this->votes_count >= $this->required_votes && in_array($this->status, ['voting', 'suggested'])) {
-            $this->update([
-                'status'       => 'approved',
-                'is_published' => true,
-            ]);
+        if ($this->votes_count >= $this->required_votes && in_array($this->status, ['suggested', 'voting'], true)) {
+            $this->forceFill(['status' => 'approved', 'is_published' => true])->save();
         }
     }
 
