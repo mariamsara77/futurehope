@@ -150,11 +150,18 @@ export async function login(email: string, password: string) {
   return { token, user: payload.user as AuthUser | null };
 }
 
-export async function register(name: string, email: string, password: string) {
+export async function register(name: string, email: string, password: string, image?: File | null) {
   clearStoredToken();
+  const body = new FormData();
+  body.append("name", name);
+  body.append("email", email);
+  body.append("password", password);
+  body.append("password_confirmation", password);
+  if (image) body.append("image", image);
+
   const payload = await request<ApiResponse>("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ name, email, password, password_confirmation: password }),
+    body,
   });
   const token = payload.token || payload.access_token;
   if (token) storeToken(token);
@@ -224,4 +231,15 @@ export async function voteWork(id: number | string) {
 export async function getMembers() {
   const payload = await request<{ members: Member[] }>("/members");
   return payload.members;
+}
+
+export async function exchangeGoogleCode(code: string) {
+  clearStoredToken();
+  const payload = await request<ApiResponse>("/auth/google/exchange", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+  const token = payload.token || payload.access_token;
+  if (token) storeToken(token);
+  return { token, user: payload.user as AuthUser | null };
 }
