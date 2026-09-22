@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class GoogleAuthController extends Controller
 {
@@ -20,7 +21,6 @@ class GoogleAuthController extends Controller
     {
         $state = Str::random(96);
 
-        // Bind the OAuth state to this browser's Laravel session.
         session()->put('futurehope_google_oauth_state', [
             'value' => $state,
             'expires_at' => now()->addMinutes(self::STATE_TTL_MINUTES)->timestamp,
@@ -36,7 +36,9 @@ class GoogleAuthController extends Controller
             'prompt' => 'select_account',
         ]);
 
-        return redirect()->away('https://accounts.google.com/o/oauth2/v2/auth?' . $query);
+        return redirect()->away(
+            'https://accounts.google.com/o/oauth2/v2/auth?' . $query
+        );
     }
 
     public function callback(Request $request): RedirectResponse
@@ -62,16 +64,23 @@ class GoogleAuthController extends Controller
             return redirect()->away($failureUrl . '&reason=missing_code');
         }
 
-        $tokenResponse = Http::asForm()->timeout(15)->post('https://oauth2.googleapis.com/token', [
-            'code' => (string) $request->string('code'),
-            'client_id' => config('services.google.client_id'),
-            'client_secret' => config('services.google.client_secret'),
-            'redirect_uri' => config('services.google.redirect'),
-            'grant_type' => 'authorization_code',
-        ]);
+        $tokenResponse = Http::asForm()
+            ->timeout(15)
+            ->post('https://oauth2.googleapis.com/token', [
+                'code' => (string) $request->string('code'),
+                'client_id' => config('services.google.client_id'),
+                'client_secret' => config('services.google.client_secret'),
+                'redirect_uri' => config('services.google.redirect'),
+                'grant_type' => 'authorization_code',
+            ]);
 
-        if (!$tokenResponse->successful() || !$tokenResponse->json('access_token')) {
-            report(new \RuntimeException('Google token exchange failed: ' . $tokenResponse->body()));
+        if (
+            !$tokenResponse->successful() ||
+            !$tokenResponse->json('access_token')
+        ) {
+            report(new \RuntimeException(
+                'Google token exchange failed: ' . $tokenResponse->body()
+            ));
 
             return redirect()->away($failureUrl . '&reason=token_exchange');
         }
@@ -81,7 +90,9 @@ class GoogleAuthController extends Controller
             ->get('https://openidconnect.googleapis.com/v1/userinfo');
 
         if (!$googleResponse->successful()) {
-            report(new \RuntimeException('Google user info request failed: ' . $googleResponse->body()));
+            report(new \RuntimeException(
+                'Google user info request failed: ' . $googleResponse->body()
+            ));
 
             return redirect()->away($failureUrl . '&reason=user_info');
         }
@@ -89,7 +100,11 @@ class GoogleAuthController extends Controller
         $google = $googleResponse->json();
         $email = strtolower(trim((string) ($google['email'] ?? '')));
 
-        if (!$email || empty($google['sub']) || ($google['email_verified'] ?? false) !== true) {
+        if (
+            !$email ||
+            empty($google['sub']) ||
+            ($google['email_verified'] ?? false) !== true
+        ) {
             return redirect()->away($failureUrl . '&reason=unverified_email');
         }
 
@@ -121,10 +136,12 @@ class GoogleAuthController extends Controller
             return redirect()->away($failureUrl . '&reason=inactive_account');
         }
 
-        // Google avatar is a fallback. A user-uploaded Media Library
-        // avatar always wins over this URL.
+        $this->ensureMemberRole($user);
+
         if (!$user->hasMedia('avatar') && !empty($google['picture'])) {
-            $user->forceFill(['avatar' => (string) $google['picture']])->save();
+            $user->forceFill([
+                'avatar' => (string) $google['picture'],
+            ])->save();
         }
 
         $oneTimeCode = Str::random(128);
@@ -162,6 +179,8 @@ class GoogleAuthController extends Controller
             ], 403);
         }
 
+        $this->ensureMemberRole($user);
+
         $token = $user->createToken(
             $request->userAgent() ?: 'google-frontend'
         )->plainTextToken;
@@ -174,6 +193,12 @@ class GoogleAuthController extends Controller
         ]);
     }
 
+    private function ensureMemberRole(User $user): void
+    {
+        $memberRole = Role::firstOrCreate(['name' => 'member']);
+        $user->assignRole($memberRole);
+    }
+
     private function formatUser(User $user): array
     {
         return [
@@ -183,6 +208,7 @@ class GoogleAuthController extends Controller
             'status' => $user->status,
             'avatar' => $user->avatar_url,
             'roles' => $user->getRoleNames()->values()->all(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
         ];
     }
 
