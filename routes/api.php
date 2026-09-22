@@ -9,9 +9,11 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
 
 Route::get('/works', [WorkController::class, 'index']);
-Route::get('/works/{work}', [WorkController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
+
+// Visitors and logged-in users can submit suggestions.
+Route::post('/works', [WorkController::class, 'store']);
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -32,8 +34,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/avatar', [ProfileController::class, 'deleteAvatar']);
     });
 
-    // Work suggestions may be submitted by visitors or logged-in users.
-    Route::post('/works', [WorkController::class, 'store']);
     Route::get('/my-works', [WorkController::class, 'myWorks']);
 
     Route::middleware('permission:work-vote')->group(function () {
@@ -48,5 +48,5 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-// Public work submission endpoint must remain outside auth.
-Route::post('/works', [WorkController::class, 'store']);
+// Public single-work route must come after /works/pending.
+Route::get('/works/{work}', [WorkController::class, 'show']);
