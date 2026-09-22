@@ -1,0 +1,61 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth'])->group(function () {
+    // Route::view('/', 'welcome')->name('home');
+
+    // === Dashboard & Analytics Routes ===
+    Route::livewire('/', 'pages::admin.dashboard.dashboard')->name('home');
+    Route::livewire('/dashboard/session-manage', 'pages::admin.dashboard.session-manage')->name('dashboard.session');
+    
+    // Visitor & Analytics (Activity Log View)
+    Route::middleware(['can:activity-log-view'])->group(function () {
+        Route::livewire('/dashboard/visitor-dashboard', 'pages::admin.dashboard.visitor-dashboard')->name('dashboard.visitor');
+        Route::livewire('/dashboard/visitor-analytics/{visitorId}', 'pages::admin.dashboard.visitor-details')->name('dashboard.visitor.details');
+    });
+
+    Route::livewire('/dashboard/universal-ai', 'pages::admin.dashboard.universal-ai-create')->name('dashboard.universal-ai');
+    Route::livewire('/dashboard/missing-data', 'pages::admin.dashboard.missing-data-manager')->name('dashboard.missing-data');
+
+    // === System Manager Routes ===
+    Route::middleware(['can:system-manager'])->group(function () {
+        Route::livewire('/dashboard/system-manager/terminal-command', 'pages::admin.dashboard.terminal-command-manager')->name('dashboard.system-manager.terminal-command');
+        Route::livewire('/dashboard/system-manager/database-monitor', 'pages::admin.dashboard.database-monitor')->name('dashboard.system-manager.database-monitor');
+    });
+
+    Route::middleware(['can:google indexing request'])->group(function () {
+        Route::livewire('/dashboard/google-indexing', 'pages::admin.dashboard.google-indexing-request')->name('dashboard.google-indexing');
+    });
+
+    // ==========================================
+    // NEW ROUTES: Foundation Management System
+    // ==========================================
+
+    // Profile (Biodata Manage)
+    Route::middleware(['can:biodata-manage'])->group(function () {
+        Route::livewire('/dashboard/my-biodata', 'pages::profile.biodata-manager')->name('dashboard.biodata');
+    });
+
+    // === User & Role Management Routes ===
+    Route::middleware(['can:user-manage'])->group(function () {
+        Route::livewire('/dashboard/users', 'pages::user.user-manager')->name('dashboard.users');
+    });
+
+    Route::middleware(['can:designation-manage'])->group(function () {
+        Route::livewire('/dashboard/designations', 'pages::designation.designation-manager')->name('dashboard.designations');
+    });
+
+    Route::middleware(['can:role-manage'])->group(function () {
+        Route::livewire('/dashboard/roles', 'pages::role.role-manager')->name('dashboard.roles');
+    });
+
+    Route::middleware(['can:permission-manage'])->group(function () {
+        Route::livewire('/dashboard/permissions', 'pages::role.manage-permissions')->name('dashboard.permissions');
+    });
+    Route::middleware(['can:biodata-manage'])->group(function () {
+    Route::livewire('/dashboard/all-biodata', 'pages::profile.manage-biodata')->name('dashboard.all-biodata');
+});
+});
+
+require __DIR__.'/settings.php';
