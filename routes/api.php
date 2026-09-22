@@ -13,7 +13,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
 
 // Visitors and logged-in users can submit suggestions.
-Route::post('/works', [WorkController::class, 'store']);
+Route::post('/works', [WorkController::class, 'store'])->middleware('throttle:10,1');
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
