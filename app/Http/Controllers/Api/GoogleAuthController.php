@@ -20,11 +20,11 @@ class GoogleAuthController extends Controller
     {
         $state = Str::random(96);
 
-        Cache::put(
-            $this->stateKey($state),
-            true,
-            now()->addMinutes(self::STATE_TTL_MINUTES)
-        );
+        // Bind the OAuth state to this browser's Laravel session.
+        session()->put('futurehope_google_oauth_state', [
+            'value' => $state,
+            'expires_at' => now()->addMinutes(self::STATE_TTL_MINUTES)->timestamp,
+        ]);
 
         $query = http_build_query([
             'client_id' => config('services.google.client_id'),
@@ -44,7 +44,17 @@ class GoogleAuthController extends Controller
         $frontend = rtrim((string) config('services.frontend_url'), '/');
         $failureUrl = $frontend . '/auth/callback/google?error=google_login_failed';
 
-        if (!$request->filled('state') || !Cache::pull($this->stateKey((string) $request->string('state')))) {
+        $sessionState = session()->pull('futurehope_google_oauth_state');
+        $incomingState = (string) $request->string('state');
+
+        if (
+            !$incomingState ||
+            !is_array($sessionState) ||
+            empty($sessionState['value']) ||
+            empty($sessionState['expires_at']) ||
+            now()->timestamp > (int) $sessionState['expires_at'] ||
+            !hash_equals((string) $sessionState['value'], $incomingState)
+        ) {
             return redirect()->away($failureUrl . '&reason=invalid_state');
         }
 
@@ -174,11 +184,6 @@ class GoogleAuthController extends Controller
             'avatar' => $user->avatar_url,
             'roles' => $user->getRoleNames()->values()->all(),
         ];
-    }
-
-    private function stateKey(string $state): string
-    {
-        return 'futurehope:google:state:' . hash('sha256', $state);
     }
 
     private function codeKey(string $code): string
