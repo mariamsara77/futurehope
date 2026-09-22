@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import AuthDialog from "@/components/AuthDialog";
 import { ApiError, getCategories, getPendingWorks, getWorks, submitWork, voteWork, type Category, type Work } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
@@ -18,7 +18,7 @@ export default function WorksPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const [published, cats] = await Promise.all([getWorks(), getCategories()]);
       setWorks(published);
@@ -28,9 +28,9 @@ export default function WorksPage() {
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "তথ্য আনা যায়নি।");
     }
-  }
+  }, [isMember]);
 
-  useEffect(() => { void load(); }, [isMember]);
+  useEffect(() => { void load(); }, [load]);
 
   function chooseImage(e: ChangeEvent<HTMLInputElement>) {
     setImage(e.target.files?.[0] ?? null);
