@@ -92,10 +92,12 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $this->ensureMemberRole($request->user());
+        $user = $request->user();
+
+        $this->ensureMemberRole($user);
 
         return response()->json([
-            'user' => $this->formatUser($request->user()),
+            'user' => $this->formatUser($user),
         ]);
     }
 
@@ -122,9 +124,15 @@ class AuthController extends Controller
             $memberRole->givePermissionTo($permission);
         }
 
-        if (!$user->hasRole('admin')) {
-            $user->assignRole($memberRole);
+        if ($user->hasRole('admin')) {
+            if (!$user->hasPermissionTo($permission)) {
+                $user->givePermissionTo($permission);
+            }
+
+            return;
         }
+
+        $user->assignRole($memberRole);
     }
 
     private function storeAvatar(User $user, Request $request): void
