@@ -68,13 +68,15 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->hasMedia('avatar')) {
+        if (!$user->hasMedia('avatar') && blank($user->avatar)) {
             return response()->json([
-                'message' => 'কোনো uploaded profile image পাওয়া যায়নি।',
+                'message' => 'কোনো profile image পাওয়া যায়নি।',
             ], 404);
         }
 
         $user->clearMediaCollection('avatar');
+        // Also allow the user to remove a Google URL fallback.
+        $user->forceFill(['avatar' => null])->save();
         $user->refresh()->load('profile.designation');
 
         return response()->json([
@@ -103,6 +105,7 @@ class ProfileController extends Controller
             'designation' => $profile?->designation?->name,
             'designation_id' => $profile?->designation_id,
             'avatar_url' => $user->avatar_url,
+            'has_uploaded_avatar' => $user->hasMedia('avatar'),
             'created_at' => $profile?->created_at,
             'updated_at' => $profile?->updated_at,
         ];
