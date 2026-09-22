@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ApiAuthenticationTest extends TestCase
@@ -31,6 +33,31 @@ class ApiAuthenticationTest extends TestCase
         ]);
 
         $this->assertNotEmpty($response->json('token'));
+    }
+
+    public function test_profile_image_is_stored_on_user_not_profile(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create([
+            'status' => 'active',
+        ]);
+
+        $response = $this
+            ->actingAs($user, 'sanctum')
+            ->post('/api/profile', [
+                'phone' => '01700000000',
+                'bio' => 'Test profile',
+                'image' => UploadedFile::fake()->image('avatar.jpg', 300, 300),
+            ]);
+
+        $response->assertOk();
+
+        $freshUser = $user->fresh();
+
+        $this->assertTrue($freshUser->hasMedia('avatar'));
+        $this->assertTrue($freshUser->profile()->exists());
+        $this->assertFalse($freshUser->profile->getAttributes()['user_id'] === null);
     }
 
     public function test_google_only_account_cannot_use_password_login(): void
