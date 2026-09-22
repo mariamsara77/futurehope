@@ -44,7 +44,7 @@ new class extends Component {
             'status' => 'required|in:active,inactive,pending,rejected',
             'designation_id' => 'nullable|exists:designations,id',
             'priority' => 'required|integer|min:1|max:9999',
-        ];
+        ]);
 
         $profile = Profile::findOrFail($this->selectedProfileId);
         
@@ -263,6 +263,7 @@ new class extends Component {
                 <flux:select.option value="active">Active</flux:select.option>
                 <flux:select.option value="inactive">Inactive</flux:select.option>
                 <flux:select.option value="pending">Pending</flux:select.option>
+                <flux:select.option value="rejected">Rejected</flux:select.option>
             </flux:select>
 
             <flux:select wire:model="designation_id" label="Designation">
