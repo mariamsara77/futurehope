@@ -2,24 +2,31 @@
 
 namespace App\Models;
 
+use App\Concerns\HasTeams;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable([
-    'name', 'email', 'password', 'google_id', 'avatar', 'status'
+    'name', 'email', 'password', 'google_id', 'avatar', 'status', 'current_team_id'
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements HasMedia
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles, InteractsWithMedia;
+
+    use HasTeams {
+        HasTeams::teams as teamsRelation;
+    }
 
     protected function casts(): array
     {
@@ -57,6 +64,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasOne(Profile::class);
     }
 
+    public function teams(): BelongsToMany
+    {
+        return $this->teamsRelation();
+    }
+
     public function works()
     {
         return $this->hasMany(Work::class);
@@ -71,4 +83,16 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(Work::class, 'assigned_to');
     }
+
+    /**
+ * Get the user's initials.
+ */
+public function initials(): string
+{
+    return Str::of($this->name)
+        ->explode(' ')
+        ->map(fn (string $name) => Str::of($name)->substr(0, 1)->upper())
+        ->take(2)
+        ->implode('');
+}
 }

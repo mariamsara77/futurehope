@@ -97,7 +97,7 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex items-center gap-3">
                             <flux:avatar
-                                src="{{ $user->profile?->getFirstMediaUrl('avatar') ?: asset('default-avatar.png') }}"
+                                src="{{ $user->avatar_url ?? asset('default-avatar.png') }}"
                                 size="sm" />
                             <span class="font-medium">{{ $user->name }}</span>
                         </div>

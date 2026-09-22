@@ -8,12 +8,14 @@ use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Title('Profile settings')] class extends Component {
-    use ProfileValidationRules;
+    use ProfileValidationRules, WithFileUploads;
 
     public string $name = '';
     public string $email = '';
+    public $avatar;
 
     /**
      * Mount the component.
@@ -31,7 +33,12 @@ new #[Title('Profile settings')] class extends Component {
     {
         $user = Auth::user();
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate(array_merge(
+            $this->profileRules($user->id),
+            ['avatar' => 'nullable|image|max:2048']
+        ));
+
+        unset($validated['avatar']);
 
         $user->fill($validated);
 
@@ -40,6 +47,20 @@ new #[Title('Profile settings')] class extends Component {
         }
 
         $user->save();
+
+        if ($this->avatar && $this->avatar->isValid()) {
+            try {
+                $user->clearMediaCollection('avatar');
+                $user->addMedia($this->avatar->getRealPath())
+                    ->usingFileName($this->avatar->getClientOriginalName())
+                    ->toMediaCollection('avatar');
+
+                $this->avatar = null;
+            } catch (\Throwable $e) {
+                Flux::toast(variant: 'warning', text: __('Profile updated, but the avatar upload failed.'));
+                return;
+            }
+        }
 
         Flux::toast(variant: 'success', text: __('Profile updated.'));
     }
@@ -81,8 +102,16 @@ new #[Title('Profile settings')] class extends Component {
 
     <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name, email address, and avatar')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
+            <div class="flex items-center gap-4">
+                <flux:avatar src="{{ Auth::user()->avatar_url }}" size="lg" />
+                <div>
+                    <flux:label class="mb-2">{{ __('Profile photo') }}</flux:label>
+                    <flux:input wire:model="avatar" type="file" accept="image/*" />
+                </div>
+            </div>
+
             <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
 
             <div>

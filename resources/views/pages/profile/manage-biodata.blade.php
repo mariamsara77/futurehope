@@ -5,6 +5,7 @@ use Livewire\WithPagination;
 use App\Models\Profile;
 use App\Models\Designation;
 use Flux\Flux;
+use Illuminate\Support\Str;
 
 new class extends Component {
     use WithPagination;
@@ -63,11 +64,6 @@ new class extends Component {
     public function deleteProfile($id)
     {
         $profile = Profile::findOrFail($id);
-        
-        // অ্যাভাটার বা মিডিয়া থাকলে তা ডিলিট করা
-        if ($profile->hasMedia('avatar')) {
-            $profile->clearMediaCollection('avatar');
-        }
 
         $profile->delete();
         Flux::toast('Biodata deleted successfully!', variant: 'danger');
@@ -122,7 +118,7 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex items-center gap-3">
                             <flux:avatar
-                                src="{{ $profile->hasMedia('avatar') ? $profile->getFirstMediaUrl('avatar') : asset('default-avatar.png') }}"
+                                src="{{ $profile->user?->avatar_url ?? asset('default-avatar.png') }}"
                                 size="sm" />
                             <div>
                                 <div class="font-medium text-zinc-900 dark:text-zinc-100">
@@ -195,7 +191,7 @@ new class extends Component {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center border-b border-zinc-700/40 pb-4">
             <div class="flex justify-center">
                 <flux:avatar
-                    src="{{ $viewingProfile->hasMedia('avatar') ? $viewingProfile->getFirstMediaUrl('avatar') : asset('default-avatar.png') }}"
+                    src="{{ $viewingProfile->user?->avatar_url ?? asset('default-avatar.png') }}"
                     size="2xl" />
             </div>
             <div class="md:col-span-2 space-y-1">

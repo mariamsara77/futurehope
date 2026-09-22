@@ -35,8 +35,10 @@ new class extends Component {
             $this->blood_group = $profile->blood_group ?? '';
             $this->bio = $profile->bio ?? '';
             
-            if ($profile->hasMedia('avatar')) {
-                $this->existingAvatarUrl = $profile->getFirstMediaUrl('avatar');
+            if ($user->hasMedia('avatar')) {
+                $this->existingAvatarUrl = $user->getFirstMediaUrl('avatar');
+            } else {
+                $this->existingAvatarUrl = $user->avatar_url ?? asset('default-avatar.png');
             }
         }
     }
@@ -69,12 +71,12 @@ new class extends Component {
         // টেম্পোরারি ফাইল চেক করে নিরাপদে ফাইল সেভ করা
         if ($this->image && $this->image->exists()) {
             try {
-                $profile->clearMediaCollection('avatar');
-                $profile->addMedia($this->image->getRealPath())
+                $user->clearMediaCollection('avatar');
+                $user->addMedia($this->image->getRealPath())
                         ->usingFileName($this->image->getClientOriginalName())
                         ->toMediaCollection('avatar');
 
-                $this->existingAvatarUrl = $profile->getFirstMediaUrl('avatar');
+                $this->existingAvatarUrl = $user->getFirstMediaUrl('avatar');
                 $this->reset('image'); // ফাইল আপলোড শেষে টেম্পোরারি প্রপার্টি রিসেট
             } catch (\Exception $e) {
                 Flux::toast('Image upload failed, but profile data was saved.', variant: 'warning');

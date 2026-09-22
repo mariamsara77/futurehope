@@ -33,7 +33,8 @@
 
             <!-- Admin Management Group -->
             @if(auth()->user()->can('user-manage') || auth()->user()->can('designation-manage') ||
-            auth()->user()->can('role-manage') || auth()->user()->can('permission-manage'))
+            auth()->user()->can('role-manage') || auth()->user()->can('permission-manage') ||
+            auth()->user()->can('work-manage'))
             <flux:sidebar.group :heading="__('Administration')" class="grid mt-4">
 
                 @can('user-manage')
@@ -61,6 +62,17 @@
                 <flux:sidebar.item icon="key" :href="route('dashboard.permissions')"
                     :current="request()->routeIs('dashboard.permissions')" wire:navigate>
                     {{ __('Permissions Manage') }}
+                </flux:sidebar.item>
+                @endcan
+
+                @can('work-manage')
+                <flux:sidebar.item icon="folder-open" :href="route('dashboard.work-categories')"
+                    :current="request()->routeIs('dashboard.work-categories')" wire:navigate>
+                    {{ __('Work Categories') }}
+                </flux:sidebar.item>
+                <flux:sidebar.item icon="briefcase" :href="route('dashboard.works')"
+                    :current="request()->routeIs('dashboard.works')" wire:navigate>
+                    {{ __('Work Submissions') }}
                 </flux:sidebar.item>
                 @endcan
 
@@ -94,13 +106,13 @@
         <flux:spacer />
 
         <flux:dropdown position="top" align="end">
-            <flux:profile :initials="auth()->user()->initials()" icon-trailing="chevron-down" />
+        <flux:profile :avatar="auth()->user()->avatar_url" :name="auth()->user()->name" :initials="auth()->user()->initials()" icon-trailing="chevron-down" />
 
             <flux:menu>
                 <flux:menu.radio.group>
                     <div class="p-0 text-sm font-normal">
                         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                            <flux:avatar :name="auth()->user()->name" :initials="auth()->user()->initials()" />
+                            <flux:avatar src="{{ auth()->user()->avatar_url }}" :name="auth()->user()->name" :initials="auth()->user()->initials()" />
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>

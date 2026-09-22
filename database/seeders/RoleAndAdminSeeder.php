@@ -24,6 +24,7 @@ class RoleAndAdminSeeder extends Seeder
             'designation-manage',
             'role-manage',
             'permission-manage',
+            'work-manage',
             'work-vote',
         ];
 

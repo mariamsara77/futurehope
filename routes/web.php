@@ -53,9 +53,15 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['can:permission-manage'])->group(function () {
         Route::livewire('/dashboard/permissions', 'pages::role.manage-permissions')->name('dashboard.permissions');
     });
+
+    Route::middleware(['can:work-manage'])->group(function () {
+        Route::livewire('/dashboard/works', 'pages::work.work-manager')->name('dashboard.works');
+        Route::livewire('/dashboard/work-categories', 'pages::work.category-manager')->name('dashboard.work-categories');
+    });
+
     Route::middleware(['can:biodata-manage'])->group(function () {
-    Route::livewire('/dashboard/all-biodata', 'pages::profile.manage-biodata')->name('dashboard.all-biodata');
-});
+        Route::livewire('/dashboard/all-biodata', 'pages::profile.manage-biodata')->name('dashboard.all-biodata');
+    });
 });
 
 require __DIR__.'/settings.php';

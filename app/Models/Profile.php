@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'bio', 'status'
 ])]
 class Profile extends Model
-{
+{    
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

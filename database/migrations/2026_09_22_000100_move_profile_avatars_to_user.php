@@ -13,7 +13,7 @@ return new class extends Migration
         // Avatar ownership is now User -> MediaLibrary. Preserve any existing
         // profile avatar media by re-pointing it to the related user.
         $profileType = Relation::getMorphAlias(Profile::class);
-        $userType = Relations::getMorphAlias(User::class);
+        $userType = Relation::getMorphAlias(User::class);
 
         Media::query()
             ->where('model_type', $profileType)
@@ -52,8 +52,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        $profileType = Relations::getMorphAlias(Profile::class);
-        $userType = Relations::getMorphAlias(User::class);
+        $profileType = Relation::getMorphAlias(Profile::class);
+        $userType = Relation::getMorphAlias(User::class);
 
         Media::query()
             ->where('model_type', $userType)
