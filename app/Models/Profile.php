@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[Fillable([
     'user_id', 'designation_id', 'priority', 'phone', 'father_name', 'mother_name',
@@ -32,7 +33,7 @@ class Profile extends Model implements HasMedia
         $this->addMediaCollection('avatar')->singleFile();
     }
 
-    public function registerMediaConversions($media = null): void
+    public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(300)
