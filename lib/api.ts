@@ -17,6 +17,7 @@ export type AuthUser = {
   email: string;
   avatar?: string | null;
   roles?: string[];
+  permissions?: string[];
   [key: string]: unknown;
 };
 
@@ -44,6 +45,7 @@ export type Profile = {
 };
 
 export type Category = { id: number | string; name: string; slug: string };
+
 export type Work = {
   id: number | string;
   title: string;
@@ -56,8 +58,11 @@ export type Work = {
   cover_url?: string | null;
   category?: string | null;
   submitted_name?: string | null;
+  submitted_email?: string | null;
   created_at?: string | null;
-  user?: { id?: number | string; name?: string | null };
+  updated_at?: string | null;
+  has_voted?: boolean;
+  user?: { id?: number | string | null; name?: string | null };
 };
 
 export type Member = {
@@ -75,6 +80,7 @@ export type Member = {
 export class ApiError extends Error {
   status: number;
   payload: ApiResponse;
+
   constructor(message: string, status = 500, payload: ApiResponse = {}) {
     super(message);
     this.name = "ApiError";
@@ -88,50 +94,90 @@ export function getStoredToken() {
 }
 
 export function clearStoredToken() {
-  if (typeof window !== "undefined") window.localStorage.removeItem(TOKEN_KEY);
+  if (typeof window === "undefined") return;
+
+  const hadToken = Boolean(window.localStorage.getItem(TOKEN_KEY));
+  window.localStorage.removeItem(TOKEN_KEY);
+
+  if (hadToken) {
+    window.dispatchEvent(new Event("futurehope-auth-changed"));
+  }
 }
 
 function storeToken(token: string) {
-  if (typeof window !== "undefined") window.localStorage.setItem(TOKEN_KEY, token);
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(TOKEN_KEY, token);
+  window.dispatchEvent(new Event("futurehope-auth-changed"));
 }
 
 function errorMessage(payload: ApiResponse, fallback: string) {
   if (payload.message) return payload.message;
+
   if (payload.errors) {
     const first = Object.values(payload.errors).flat()[0];
     if (first) return String(first);
   }
+
   return fallback;
 }
 
-async function request<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  authenticated = false,
+): Promise<T> {
   const headers = new Headers(init.headers);
+
   headers.set("Accept", "application/json");
-  if (init.body && !headers.has("Content-Type") && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
+
+  if (
+    init.body &&
+    !headers.has("Content-Type") &&
+    !(init.body instanceof FormData)
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const token = getStoredToken();
-  if (authenticated && token) headers.set("Authorization", `Bearer ${token}`);
+
+  if (authenticated && token) {
+    headers.set("Authorization", "Bearer " + token);
+  }
 
   let response: Response;
+
   try {
-    response = await fetch(`${API_BASE_URL}/api${path}`, {
+    response = await fetch(API_BASE_URL + "/api" + path, {
       ...init,
       headers,
-      credentials: "include",
+      credentials: "omit",
       cache: "no-store",
     });
   } catch {
-    throw new ApiError("সার্ভারের সাথে সংযোগ করা যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।", 0);
+    throw new ApiError(
+      "সার্ভারের সাথে সংযোগ করা যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+      0,
+    );
   }
 
   const text = await response.text();
   let payload: ApiResponse = {};
-  try { payload = text ? JSON.parse(text) : {}; } catch {}
+
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {}
 
   if (!response.ok) {
     if (response.status === 401) clearStoredToken();
+
     throw new ApiError(
-      errorMessage(payload, response.status === 401 ? "আপনার লগইন সেশন বৈধ নয়।" : "অনুরোধটি সম্পন্ন করা যায়নি।"),
+      errorMessage(
+        payload,
+        response.status === 401
+          ? "আপনার লগইন সেশন বৈধ নয়।"
+          : "অনুরোধটি সম্পন্ন করা যায়নি.",
+      ),
       response.status,
       payload,
     );
@@ -142,61 +188,105 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
 
 export async function login(email: string, password: string) {
   clearStoredToken();
+
   const payload = await request<ApiResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+
   const token = payload.token || payload.access_token;
+
   if (token) storeToken(token);
+
   return { token, user: payload.user as AuthUser | null };
 }
 
-export async function register(name: string, email: string, password: string, image?: File | null) {
+export async function register(
+  name: string,
+  email: string,
+  password: string,
+  image?: File | null,
+) {
   clearStoredToken();
+
   const body = new FormData();
   body.append("name", name);
   body.append("email", email);
   body.append("password", password);
   body.append("password_confirmation", password);
+
   if (image) body.append("image", image);
 
   const payload = await request<ApiResponse>("/auth/register", {
     method: "POST",
     body,
   });
+
   const token = payload.token || payload.access_token;
+
   if (token) storeToken(token);
+
   return { token, user: payload.user as AuthUser | null };
 }
 
 export async function getMe() {
-  const payload = await request<ApiResponse>("/auth/me", { method: "GET" }, true);
+  const payload = await request<ApiResponse>(
+    "/auth/me",
+    { method: "GET" },
+    true,
+  );
+
   return (payload.user || payload.data || payload) as AuthUser;
 }
 
 export async function logout(all = false) {
   try {
-    await request<ApiResponse>(all ? "/auth/logout-all" : "/auth/logout", { method: "POST" }, true);
+    await request<ApiResponse>(
+      all ? "/auth/logout-all" : "/auth/logout",
+      { method: "POST" },
+      true,
+    );
   } finally {
     clearStoredToken();
   }
 }
 
 export async function getProfile() {
-  const payload = await request<ApiResponse>("/profile", { method: "GET" }, true);
+  const payload = await request<ApiResponse>(
+    "/profile",
+    { method: "GET" },
+    true,
+  );
+
   return payload.profile as Profile;
 }
 
-export async function updateProfile(fields: Record<string, string>, image?: File | null) {
+export async function updateProfile(
+  fields: Record<string, string>,
+  image?: File | null,
+) {
   const body = new FormData();
+
   Object.entries(fields).forEach(([key, value]) => body.append(key, value));
+
   if (image) body.append("image", image);
-  const payload = await request<ApiResponse>("/profile", { method: "POST", body }, true);
+
+  const payload = await request<ApiResponse>(
+    "/profile",
+    { method: "POST", body },
+    true,
+  );
+
   return payload.profile as Profile;
 }
 
 export async function deleteAvatar() {
-  const payload = await request<ApiResponse>("/profile/avatar", { method: "DELETE" }, true);
+  const payload = await request<ApiResponse>(
+    "/profile/avatar",
+    { method: "DELETE" },
+    true,
+  );
+
   return payload.profile as Profile;
 }
 
@@ -206,30 +296,67 @@ export async function getCategories() {
 }
 
 export async function submitWork(form: FormData) {
-  // Public users may submit without auth; logged-in users should still send
-  // their Sanctum token so the backend can associate the work with the user.
-  const payload = await request<{ work: Work; message: string }>(
+  return request<{ work: Work; message: string }>(
     "/works",
     { method: "POST", body: form },
     Boolean(getStoredToken()),
   );
-  return payload;
 }
 
 export async function getWorks(status?: string) {
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
-  const payload = await request<{ works: Work[] }>(`/works${query}`);
+  const query = status ? "?status=" + encodeURIComponent(status) : "";
+  const payload = await request<{ works: Work[] }>("/works" + query);
   return payload.works;
 }
 
 export async function getPendingWorks() {
-  const payload = await request<{ works: Work[] }>("/works/pending", { method: "GET" }, true);
+  const payload = await request<{ works: Work[] }>(
+    "/works/pending",
+    { method: "GET" },
+    true,
+  );
+
   return payload.works;
 }
 
+export async function getWork(id: number | string) {
+  const encodedId = encodeURIComponent(String(id));
+  const token = getStoredToken();
+
+  if (token) {
+    try {
+      const payload = await request<{ work: Work }>(
+        "/works/" + encodedId + "/view",
+        { method: "GET" },
+        true,
+      );
+
+      return payload.work;
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) {
+        throw error;
+      }
+    }
+  }
+
+  const payload = await request<{ work: Work }>(
+    "/works/" + encodedId,
+    { method: "GET" },
+  );
+
+  return payload.work;
+}
+
 export async function voteWork(id: number | string) {
-  return request<{ message: string; votes_count: number; required: number; status: string; approved: boolean }>(
-    `/works/${id}/vote`,
+  return request<{
+    message: string;
+    votes_count: number;
+    required: number;
+    status: string;
+    approved: boolean;
+    has_voted: boolean;
+  }>(
+    "/works/" + encodeURIComponent(String(id)) + "/vote",
     { method: "POST" },
     true,
   );
@@ -242,11 +369,15 @@ export async function getMembers() {
 
 export async function exchangeGoogleCode(code: string) {
   clearStoredToken();
+
   const payload = await request<ApiResponse>("/auth/google/exchange", {
     method: "POST",
     body: JSON.stringify({ code }),
   });
+
   const token = payload.token || payload.access_token;
+
   if (token) storeToken(token);
+
   return { token, user: payload.user as AuthUser | null };
 }
