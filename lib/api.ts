@@ -34,6 +34,7 @@ export type Profile = {
   blood_group?: string | null;
   bio?: string | null;
   avatar_url?: string | null;
+  has_uploaded_avatar?: boolean;
   status?: "pending" | "active" | "rejected" | string;
   priority?: number;
   designation?: string | null;
