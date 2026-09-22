@@ -17,14 +17,20 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ]);
 
         $user = User::create([
-            'name' => $data['name'],
+            'name' => trim($data['name']),
             'email' => strtolower(trim($data['email'])),
             'password' => $data['password'],
             'status' => 'active',
         ]);
+
+        if ($request->hasFile('image')) {
+            $this->storeAvatar($user, $request);
+            $user->refresh();
+        }
 
         $token = $user->createToken($request->userAgent() ?: 'frontend')->plainTextToken;
 
@@ -45,8 +51,10 @@ class AuthController extends Controller
 
         $user = User::where('email', strtolower(trim($credentials['email'])))->first();
 
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            throw ValidationException::withMessages(['email' => ['ইমেইল অথবা পাসওয়ার্ড ভুল।']]);
+        if (!$user || !$user->password || !Hash::check($credentials['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['ইমেইল অথবা পাসওয়ার্ড ভুল।'],
+            ]);
         }
 
         if ($user->status !== 'active') {
@@ -65,19 +73,30 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $this->formatUser($request->user())]);
+        return response()->json([
+            'user' => $this->formatUser($request->user()),
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()?->delete();
+
         return response()->json(['message' => 'লগআউট সফল']);
     }
 
     public function logoutAll(Request $request): JsonResponse
     {
         $request->user()->tokens()->delete();
+
         return response()->json(['message' => 'সব ডিভাইস থেকে লগআউট সফল']);
+    }
+
+    private function storeAvatar(User $user, Request $request): void
+    {
+        $user->clearMediaCollection('avatar');
+        $user->addMediaFromRequest('image')->toMediaCollection('avatar');
+        $user->forceFill(['avatar' => null])->save();
     }
 
     private function formatUser(User $user): array
@@ -87,7 +106,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'status' => $user->status,
-            'avatar' => $user->avatar_url ?? null,
+            'avatar' => $user->avatar_url,
             'roles' => $user->getRoleNames()->values()->all(),
         ];
     }
