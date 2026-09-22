@@ -1,17 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AuthDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -23,6 +24,7 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
       setName("");
       setEmail("");
       setPassword("");
+      setImage(null);
       setError("");
       setBusy(false);
     }
@@ -42,14 +44,28 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
 
   if (!open || !mounted) return null;
 
+  function chooseImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError("ছবির আকার সর্বোচ্চ ২ MB হতে হবে।");
+      return;
+    }
+    setImage(file);
+    setError("");
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
     setBusy(true);
 
     try {
-      if (mode === "login") await login(email.trim(), password);
-      else await register(name.trim(), email.trim(), password);
+      if (mode === "login") {
+        await login(email.trim(), password);
+      } else {
+        await register(name.trim(), email.trim(), password, image);
+      }
       onClose();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "অনুরোধটি সম্পন্ন করা যায়নি।");
@@ -67,18 +83,41 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-xl font-bold text-white">FH</div>
             <h2 className="text-2xl font-bold text-zinc-950 sm:text-3xl">{mode === "login" ? "আপনার অ্যাকাউন্টে লগইন" : "নতুন অ্যাকাউন্ট তৈরি করুন"}</h2>
             <p className="mt-2 text-sm leading-6 text-zinc-500">
-              {mode === "login" ? "সদস্য হিসেবে আপনার profile ও ভোটের সুবিধা ব্যবহার করুন।" : "অ্যাকাউন্ট তৈরি করে নিজের profile জমা দিন এবং Foundation member হলে কাজে ভোট দিন।"}
+              {mode === "login" ? "ইমেইল-পাসওয়ার্ড বা Google দিয়ে লগইন করুন।" : "নাম, ইমেইল ও পাসওয়ার্ড দিয়ে account তৈরি করুন। চাইলে profile image-ও দিন।"}
             </p>
           </div>
           <button type="button" disabled={busy} onClick={onClose} className="rounded-xl p-2 text-2xl text-zinc-400 hover:bg-zinc-100">×</button>
         </div>
 
+        <button
+          type="button"
+          disabled={busy}
+          onClick={loginWithGoogle}
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 font-bold text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:opacity-60"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 text-sm font-bold">G</span>
+          Google দিয়ে {mode === "login" ? "লগইন" : "চালিয়ে যান"}
+        </button>
+
+        <div className="my-5 flex items-center gap-3 text-xs font-semibold text-zinc-400">
+          <span className="h-px flex-1 bg-zinc-200" />
+          অথবা
+          <span className="h-px flex-1 bg-zinc-200" />
+        </div>
+
         <form onSubmit={submit} className="space-y-5">
           {mode === "register" && (
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-zinc-700">নাম</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 outline-none focus:border-emerald-500 focus:bg-white" placeholder="আপনার নাম" />
-            </label>
+            <>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-zinc-700">নাম</span>
+                <input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 outline-none focus:border-emerald-500 focus:bg-white" placeholder="আপনার নাম" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-zinc-700">Profile image (ঐচ্ছিক)</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseImage} className="block w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm" />
+              </label>
+            </>
           )}
 
           <label className="block">
@@ -87,7 +126,7 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-zinc-700">পাসওয়ার্ড</span>
+            <span className="mb-2 block text-sm font-semibold text-zinc-700">পাসওয়ার্ড</span>
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" minLength={8} required autoComplete={mode === "login" ? "current-password" : "new-password"} className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 outline-none focus:border-emerald-500 focus:bg-white" placeholder="কমপক্ষে ৮ অক্ষর" />
           </label>
 
