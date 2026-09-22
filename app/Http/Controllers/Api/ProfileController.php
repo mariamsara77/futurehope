@@ -12,8 +12,11 @@ class ProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user();
-        return response()->json(['profile' => $this->formatProfile($user->profile, $user)]);
+        $user = $request->user()->loadMissing('profile.designation');
+
+        return response()->json([
+            'profile' => $this->formatProfile($user->profile, $user),
+        ]);
     }
 
     public function update(Request $request): JsonResponse
@@ -39,36 +42,44 @@ class ProfileController extends Controller
 
         if ($request->hasFile('image')) {
             try {
-                $profile->clearMediaCollection('avatar');
-                $profile->addMediaFromRequest('image')->toMediaCollection('avatar');
+                // Avatar is owned by User, not Profile.
+                $user->clearMediaCollection('avatar');
+                $user->addMediaFromRequest('image')->toMediaCollection('avatar');
+                $user->forceFill(['avatar' => null])->save();
             } catch (\Throwable $e) {
                 report($e);
+
                 return response()->json([
                     'message' => 'Profile saved, but image upload failed.',
-                    'profile' => $this->formatProfile($profile->fresh(), $user),
+                    'profile' => $this->formatProfile($profile->fresh('designation'), $user->fresh()),
                 ], 422);
             }
         }
 
+        $user->refresh()->load('profile.designation');
+
         return response()->json([
             'message' => 'Profile submitted for admin approval.',
-            'profile' => $this->formatProfile($profile->fresh(), $user),
+            'profile' => $this->formatProfile($user->profile, $user),
         ]);
     }
 
     public function deleteAvatar(Request $request): JsonResponse
     {
         $user = $request->user();
-        $profile = $user->profile;
 
-        if (!$profile || !$profile->hasMedia('avatar')) {
-            return response()->json(['message' => 'No avatar found.'], 404);
+        if (!$user->hasMedia('avatar')) {
+            return response()->json([
+                'message' => 'কোনো uploaded profile image পাওয়া যায়নি।',
+            ], 404);
         }
 
-        $profile->clearMediaCollection('avatar');
+        $user->clearMediaCollection('avatar');
+        $user->refresh()->load('profile.designation');
+
         return response()->json([
-            'message' => 'Avatar deleted successfully.',
-            'profile' => $this->formatProfile($profile->fresh(), $user),
+            'message' => 'Profile image removed. Google avatar থাকলে সেটি fallback হিসেবে থাকবে।',
+            'profile' => $this->formatProfile($user->profile, $user),
         ]);
     }
 
@@ -91,7 +102,7 @@ class ProfileController extends Controller
             'priority' => $profile?->priority ?? 999,
             'designation' => $profile?->designation?->name,
             'designation_id' => $profile?->designation_id,
-            'avatar_url' => $profile?->getFirstMediaUrl('avatar') ?: null,
+            'avatar_url' => $user->avatar_url,
             'created_at' => $profile?->created_at,
             'updated_at' => $profile?->updated_at,
         ];
