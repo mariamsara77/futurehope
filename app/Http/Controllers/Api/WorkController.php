@@ -49,9 +49,6 @@ class WorkController extends Controller
         ]);
     }
 
-    /**
-     * Public detail endpoint. Only published works are public.
-     */
     public function show(Work $work): JsonResponse
     {
         if (!$work->is_published) {
@@ -65,16 +62,13 @@ class WorkController extends Controller
         ]);
     }
 
-    /**
-     * Authenticated detail endpoint for work owners and voting members.
-     */
     public function view(Request $request, Work $work): JsonResponse
     {
         $user = $request->user();
 
         if (
             !$work->is_published &&
-            $work->user_id !== $user->id &&
+            (int) $work->user_id !== (int) $user->id &&
             !$user->can('work-vote')
         ) {
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
@@ -247,7 +241,6 @@ class WorkController extends Controller
         }
 
         if ($detailed) {
-            $formatted['submitted_email'] = $work->submitted_email;
             $formatted['updated_at'] = $work->updated_at?->toDateTimeString();
         }
 
