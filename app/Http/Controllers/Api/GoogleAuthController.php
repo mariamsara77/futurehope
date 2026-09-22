@@ -203,9 +203,15 @@ class GoogleAuthController extends Controller
             $memberRole->givePermissionTo($permission);
         }
 
-        if (!$user->hasRole('admin')) {
-            $user->assignRole($memberRole);
+        if ($user->hasRole('admin')) {
+            if (!$user->hasPermissionTo($permission)) {
+                $user->givePermissionTo($permission);
+            }
+
+            return;
         }
+
+        $user->assignRole($memberRole);
     }
 
     private function formatUser(User $user): array
