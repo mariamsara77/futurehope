@@ -62,6 +62,7 @@ new class extends Component {
                 'education' => $this->education,
                 'blood_group' => $this->blood_group,
                 'bio' => $this->bio,
+                'status' => 'pending',
             ]
         );
 
