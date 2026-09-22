@@ -94,7 +94,7 @@ class AuthController extends Controller
 
     private function storeAvatar(User $user, Request $request): void
     {
-        $user->clearMediaCollection('avatar');
+        // singleFile() replaces the previous local image safely.
         $user->addMediaFromRequest('image')->toMediaCollection('avatar');
         $user->forceFill(['avatar' => null])->save();
     }
