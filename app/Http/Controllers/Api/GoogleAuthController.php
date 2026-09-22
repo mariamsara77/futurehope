@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class GoogleAuthController extends Controller
@@ -195,8 +196,16 @@ class GoogleAuthController extends Controller
 
     private function ensureMemberRole(User $user): void
     {
+        $permission = Permission::firstOrCreate(['name' => 'work-vote']);
         $memberRole = Role::firstOrCreate(['name' => 'member']);
-        $user->assignRole($memberRole);
+
+        if (!$memberRole->hasPermissionTo($permission)) {
+            $memberRole->givePermissionTo($permission);
+        }
+
+        if (!$user->hasRole('admin')) {
+            $user->assignRole($memberRole);
+        }
     }
 
     private function formatUser(User $user): array
