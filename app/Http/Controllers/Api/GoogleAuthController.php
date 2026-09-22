@@ -126,7 +126,7 @@ class GoogleAuthController extends Controller
         );
 
         return redirect()->away(
-            $frontend . '/auth/callback/google?code=' . urlencode($oneTimeCode)
+            $frontend . '/auth/callback/google#code=' . urlencode($oneTimeCode)
         );
     }
 
