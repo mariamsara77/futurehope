@@ -43,7 +43,8 @@ class ProfileController extends Controller
         if ($request->hasFile('image')) {
             try {
                 // Avatar is owned by User, not Profile.
-                $user->clearMediaCollection('avatar');
+                // singleFile() replaces the previous local image only after
+                // the new media item is accepted.
                 $user->addMediaFromRequest('image')->toMediaCollection('avatar');
                 $user->forceFill(['avatar' => null])->save();
             } catch (\Throwable $e) {
