@@ -6,13 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Profile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AdminProfileController extends Controller
 {
     public function pending(): JsonResponse
     {
-        $profiles = Profile::with(['user:id,name,email', 'designation:id,name,order'])
+        $profiles = Profile::with(['user:id,name,email,avatar', 'designation:id,name,order'])
             ->where('status', 'pending')
             ->latest('updated_at')
             ->get()
@@ -65,7 +64,7 @@ class AdminProfileController extends Controller
             'education' => $profile->education,
             'blood_group' => $profile->blood_group,
             'bio' => $profile->bio,
-            'avatar_url' => $profile->getFirstMediaUrl('avatar') ?: null,
+            'avatar_url' => $profile->user?->avatar_url,
             'updated_at' => $profile->updated_at,
         ];
     }
