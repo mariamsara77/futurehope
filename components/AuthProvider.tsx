@@ -1,7 +1,16 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { API_BASE_URL, clearStoredToken, exchangeGoogleCode, getMe, getStoredToken, login as loginApi, logout as logoutApi, register as registerApi } from "@/lib/api";
+import {
+  API_BASE_URL,
+  clearStoredToken,
+  exchangeGoogleCode,
+  getMe,
+  getStoredToken,
+  login as loginApi,
+  logout as logoutApi,
+  register as registerApi,
+} from "@/lib/api";
 import type { AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
@@ -25,6 +34,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   const refresh = useCallback(async () => {
     const token = getStoredToken();
+
     if (!token) {
       setUser(null);
       return;
@@ -39,41 +49,61 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   useEffect(() => {
-    refresh().finally(() => setLoading(false));
+    void refresh().finally(() => setLoading(false));
+  }, [refresh]);
+
+  useEffect(() => {
+    const handleAuthChanged = () => {
+      void refresh();
+    };
+
+    window.addEventListener("storage", handleAuthChanged);
+    window.addEventListener("futurehope-auth-changed", handleAuthChanged);
+
+    return () => {
+      window.removeEventListener("storage", handleAuthChanged);
+      window.removeEventListener("futurehope-auth-changed", handleAuthChanged);
+    };
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await loginApi(email, password);
+
     if (result.user) {
       setUser(result.user);
       return result.user;
     }
+
     await refresh();
     return null;
   }, [refresh]);
 
   const register = useCallback(async (name: string, email: string, password: string, image?: File | null) => {
     const result = await registerApi(name, email, password, image);
+
     if (result.user) {
       setUser(result.user);
       return result.user;
     }
+
     await refresh();
     return null;
   }, [refresh]);
 
   const loginWithGoogle = useCallback(() => {
     if (typeof window !== "undefined") {
-      window.location.assign(`${API_BASE_URL}/api/auth/google/redirect`);
+      window.location.assign(API_BASE_URL + "/api/auth/google/redirect");
     }
   }, []);
 
   const completeGoogleLogin = useCallback(async (code: string) => {
     const result = await exchangeGoogleCode(code);
+
     if (result.user) {
       setUser(result.user);
       return result.user;
     }
+
     await refresh();
     return null;
   }, [refresh]);
@@ -88,10 +118,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const roles = user?.roles ?? [];
+  const permissions = user?.permissions ?? [];
+
   const value = useMemo(() => ({
     user,
     loading,
-    isMember: roles.includes("member") || roles.includes("admin"),
+    isMember:
+      roles.includes("member") ||
+      roles.includes("admin") ||
+      permissions.includes("work-vote"),
     isAdmin: roles.includes("admin"),
     login,
     register,
@@ -99,13 +134,28 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     completeGoogleLogin,
     logout,
     refresh,
-  }), [user, loading, roles, login, register, loginWithGoogle, completeGoogleLogin, logout, refresh]);
+  }), [
+    user,
+    loading,
+    roles,
+    permissions,
+    login,
+    register,
+    loginWithGoogle,
+    completeGoogleLogin,
+    logout,
+    refresh,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const value = useContext(AuthContext);
-  if (!value) throw new Error("useAuth must be used inside AuthProvider");
+
+  if (!value) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+
   return value;
 }
