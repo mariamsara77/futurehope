@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm ci"
+  "installCommand": "npm ci",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"feat/foundation-platform-v2\" ]; then exit 1; else exit 0; fi"
 }
