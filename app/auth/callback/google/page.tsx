@@ -13,7 +13,8 @@ export default function GoogleCallbackPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const codeParams = new URLSearchParams(window.location.hash.slice(1));
+    const code = codeParams.get("code");
     const error = params.get("error");
     const reason = params.get("reason");
 
