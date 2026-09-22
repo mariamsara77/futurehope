@@ -46,7 +46,7 @@ class ProfileController extends Controller
                 // singleFile() replaces the previous local image only after
                 // the new media item is accepted.
                 $user->addMediaFromRequest('image')->toMediaCollection('avatar');
-                $user->forceFill(['avatar' => null])->save();
+                // Keep the Google avatar URL as fallback for a later delete.
             } catch (\Throwable $e) {
                 report($e);
 
@@ -76,8 +76,6 @@ class ProfileController extends Controller
         }
 
         $user->clearMediaCollection('avatar');
-        // Also allow the user to remove a Google URL fallback.
-        $user->forceFill(['avatar' => null])->save();
         $user->refresh()->load('profile.designation');
 
         return response()->json([
