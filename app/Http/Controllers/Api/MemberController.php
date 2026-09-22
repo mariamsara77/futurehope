@@ -10,7 +10,7 @@ class MemberController extends Controller
 {
     public function index(): JsonResponse
     {
-        $members = Profile::with(['user:id,name', 'designation:id,name,order'])
+        $members = Profile::with(['user:id,name,avatar', 'designation:id,name,order'])
             ->where('status', 'active')
             ->whereHas('user', fn ($q) => $q->where('status', 'active'))
             ->orderBy('priority')
@@ -25,7 +25,7 @@ class MemberController extends Controller
                 'designation_order' => $profile->designation?->order,
                 'priority' => $profile->priority,
                 'bio' => $profile->bio,
-                'avatar_url' => $profile->getFirstMediaUrl('avatar') ?: null,
+                'avatar_url' => $profile->user?->avatar_url,
                 'blood_group' => $profile->blood_group,
             ]);
 
