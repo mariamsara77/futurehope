@@ -111,26 +111,10 @@ class GoogleAuthController extends Controller
             return redirect()->away($failureUrl . '&reason=inactive_account');
         }
 
-        // Keep a user-uploaded avatar authoritative. Google becomes the
-        // fallback image only when the account has no local image/avatar yet.
-        if (!$user->hasMedia('avatar') && blank($user->avatar) && !empty($google['picture'])) {
-            try {
-                $picture = Http::timeout(10)->get((string) $google['picture']);
-
-                if ($picture->successful() && $picture->body() !== '') {
-                    $mime = strtolower((string) $picture->header('Content-Type'));
-                    $extension = str_contains($mime, 'png') ? 'png' : (str_contains($mime, 'webp') ? 'webp' : 'jpg');
-
-                    $user->addMediaFromString($picture->body())
-                        ->usingFileName('google-avatar-' . Str::random(20) . '.' . $extension)
-                        ->toMediaCollection('avatar');
-                } else {
-                    $user->forceFill(['avatar' => (string) $google['picture']])->save();
-                }
-            } catch (\Throwable $e) {
-                report($e);
-                $user->forceFill(['avatar' => (string) $google['picture']])->save();
-            }
+        // Google avatar is a fallback. A user-uploaded Media Library
+        // avatar always wins over this URL.
+        if (!$user->hasMedia('avatar') && !empty($google['picture'])) {
+            $user->forceFill(['avatar' => (string) $google['picture']])->save();
         }
 
         $oneTimeCode = Str::random(128);
