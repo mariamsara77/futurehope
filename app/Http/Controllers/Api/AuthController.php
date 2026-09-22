@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
@@ -112,8 +113,21 @@ class AuthController extends Controller
 
     private function ensureMemberRole(User $user): void
     {
+        $permission = Permission::firstOrCreate(['name' => 'work-vote']);
         $memberRole = Role::firstOrCreate(['name' => 'member']);
-        $user->assignRole($memberRole);
+
+        if (!$memberRole->hasPermissionTo($permission)) {
+            $memberRole->givePermissionTo($permission);
+        }
+
+        if (!$user->hasRole('admin') && !$user->hasRole('member')) {
+            $user->assignRole($memberRole);
+            return;
+        }
+
+        if ($user->hasRole('member')) {
+            $user->assignRole($memberRole);
+        }
     }
 
     private function storeAvatar(User $user, Request $request): void
