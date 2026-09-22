@@ -70,10 +70,14 @@ class ApiAuthenticationTest extends TestCase
             ], 200),
         ]);
 
-        $state = str_repeat('s', 96);
-        Cache::put('futurehope:google:state:' . hash('sha256', $state), true, now()->addMinutes(10));
+        $redirect = $this->get('/api/auth/google/redirect')->assertRedirect();
+        $googleLocation = (string) $redirect->headers->get('Location');
+        parse_str((string) parse_url($googleLocation, PHP_URL_QUERY), $googleQuery);
+        $state = (string) ($googleQuery['state'] ?? '');
 
-        $callback = $this->get('/api/auth/google/callback?code=google-code&state=' . $state);
+        $this->assertSame(96, strlen($state));
+
+        $callback = $this->get('/api/auth/google/callback?code=google-code&state=' . urlencode($state));
 
         $callback->assertRedirect();
         $location = (string) $callback->headers->get('Location');
