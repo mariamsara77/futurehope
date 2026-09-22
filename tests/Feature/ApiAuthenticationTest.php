@@ -57,7 +57,7 @@ class ApiAuthenticationTest extends TestCase
 
         $this->assertTrue($freshUser->hasMedia('avatar'));
         $this->assertTrue($freshUser->profile()->exists());
-        $this->assertFalse($freshUser->profile->getAttributes()['user_id'] === null);
+        $this->assertSame($freshUser->id, (int) $freshUser->profile->user_id);
     }
 
     public function test_google_only_account_cannot_use_password_login(): void
