@@ -8,6 +8,7 @@ use App\Models\WorkVote;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class WorkController extends Controller
 {
@@ -22,42 +23,87 @@ class WorkController extends Controller
         }
 
         return response()->json([
-            'works' => $query->get()->map(fn (Work $work) => $this->format($work))->values(),
+            'works' => $query->get()
+                ->map(fn (Work $work) => $this->format($work))
+                ->values(),
         ]);
     }
 
     public function pending(Request $request): JsonResponse
     {
+        $userId = (int) $request->user()->id;
+
         $works = Work::with(['user:id,name', 'category:id,name'])
+            ->withExists([
+                'votes as has_voted' => fn ($query) => $query->where('user_id', $userId),
+            ])
             ->whereIn('status', ['suggested', 'voting'])
             ->where('is_published', false)
             ->latest()
             ->get();
 
         return response()->json([
-            'works' => $works->map(fn (Work $work) => $this->format($work))->values(),
+            'works' => $works
+                ->map(fn (Work $work) => $this->format($work))
+                ->values(),
         ]);
     }
 
+    /**
+     * Public detail endpoint. Only published works are public.
+     */
     public function show(Work $work): JsonResponse
     {
         if (!$work->is_published) {
-            $user = request()->user();
-            if (!$user || $user->id !== $work->user_id) {
-                return response()->json(['message' => 'Not found'], 404);
-            }
+            return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
         $work->load(['user:id,name', 'category:id,name']);
-        return response()->json(['work' => $this->format($work, true)]);
+
+        return response()->json([
+            'work' => $this->format($work, true),
+        ]);
+    }
+
+    /**
+     * Authenticated detail endpoint for work owners and voting members.
+     */
+    public function view(Request $request, Work $work): JsonResponse
+    {
+        $user = $request->user();
+
+        if (
+            !$work->is_published &&
+            $work->user_id !== $user->id &&
+            !$user->can('work-vote')
+        ) {
+            return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
+        }
+
+        $work->load(['user:id,name', 'category:id,name']);
+
+        if ($user->can('work-vote')) {
+            $work->setAttribute(
+                'has_voted',
+                $work->votes()->where('user_id', $user->id)->exists()
+            );
+        }
+
+        return response()->json([
+            'work' => $this->format($work, true),
+        ]);
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:200'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'category_id' => ['nullable', 'exists:work_categories,id'],
+            'description' => ['required', 'string', 'max:2000'],
+            'category_id' => [
+                'nullable',
+                Rule::exists('work_categories', 'id')
+                    ->where(fn ($query) => $query->where('is_active', true)),
+            ],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:3072'],
             'submitted_name' => ['nullable', 'string', 'max:100'],
             'submitted_email' => ['nullable', 'email', 'max:255'],
@@ -70,9 +116,11 @@ class WorkController extends Controller
             'category_id' => $validated['category_id'] ?? null,
             'submitted_name' => $user?->name ?? ($validated['submitted_name'] ?? null),
             'submitted_email' => $user?->email ?? ($validated['submitted_email'] ?? null),
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'title' => trim($validated['title']),
+            'description' => trim($validated['description']),
             'status' => 'voting',
+            'is_published' => false,
+            'votes_count' => 0,
             'required_votes' => 10,
         ]);
 
@@ -80,9 +128,11 @@ class WorkController extends Controller
             $work->addMediaFromRequest('image')->toMediaCollection('cover');
         }
 
+        $work->load(['user:id,name', 'category:id,name']);
+
         return response()->json([
             'message' => 'আপনার কাজের প্রস্তাব জমা হয়েছে। সদস্যদের ভোট শুরু হয়েছে।',
-            'work' => $this->format($work->fresh(['user', 'category'])),
+            'work' => $this->format($work, true),
         ], 201);
     }
 
@@ -90,37 +140,65 @@ class WorkController extends Controller
     {
         $user = $request->user();
 
-        if ($work->status !== 'voting') {
-            return response()->json(['message' => 'এই কাজে এখন ভোট দেওয়া যাচ্ছে না।'], 422);
-        }
+        $result = DB::transaction(function () use ($user, $work): array {
+            $lockedWork = Work::query()
+                ->whereKey($work->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $created = DB::transaction(function () use ($user, $work) {
-            $work = Work::whereKey($work->id)->lockForUpdate()->firstOrFail();
-
-            if ($work->status !== 'voting') {
-                return false;
+            if ($lockedWork->is_published || $lockedWork->status !== 'voting') {
+                return [
+                    'ok' => false,
+                    'message' => 'এই কাজে এখন ভোট দেওয়া যাচ্ছে না।',
+                    'status' => 422,
+                ];
             }
 
-            if (WorkVote::where('work_id', $work->id)->where('user_id', $user->id)->exists()) {
-                return false;
+            if (
+                WorkVote::query()
+                    ->where('work_id', $lockedWork->id)
+                    ->where('user_id', $user->id)
+                    ->exists()
+            ) {
+                return [
+                    'ok' => false,
+                    'message' => 'আপনি ইতিমধ্যে এই কাজে ভোট দিয়েছেন।',
+                    'status' => 422,
+                ];
             }
 
-            WorkVote::create(['work_id' => $work->id, 'user_id' => $user->id]);
-            return true;
+            WorkVote::create([
+                'work_id' => $lockedWork->id,
+                'user_id' => $user->id,
+            ]);
+
+            $lockedWork->refresh();
+
+            return [
+                'ok' => true,
+                'work' => $lockedWork,
+            ];
         });
 
-        if (!$created) {
-            return response()->json(['message' => 'আপনি ইতিমধ্যে ভোট দিয়েছেন অথবা ভোট বন্ধ হয়ে গেছে।'], 422);
+        if (!$result['ok']) {
+            return response()->json(
+                ['message' => $result['message']],
+                $result['status']
+            );
         }
 
-        $work->refresh();
+        /** @var Work $updatedWork */
+        $updatedWork = $result['work'];
 
         return response()->json([
-            'message' => 'ভোট সফল।',
-            'votes_count' => $work->votes_count,
-            'required' => $work->required_votes,
-            'status' => $work->status,
-            'approved' => $work->status === 'approved',
+            'message' => $updatedWork->status === 'approved'
+                ? '১০টি ভোট পূর্ণ হয়েছে—কাজটি অনুমোদিত হয়েছে।'
+                : 'ভোট সফল হয়েছে।',
+            'votes_count' => $updatedWork->votes_count,
+            'required' => $updatedWork->required_votes,
+            'status' => $updatedWork->status,
+            'approved' => $updatedWork->status === 'approved',
+            'has_voted' => true,
         ]);
     }
 
@@ -131,20 +209,29 @@ class WorkController extends Controller
             ->latest()
             ->get();
 
-        return response()->json(['works' => $works->map(fn (Work $work) => $this->format($work))->values()]);
+        return response()->json([
+            'works' => $works
+                ->map(fn (Work $work) => $this->format($work))
+                ->values(),
+        ]);
     }
 
     private function format(Work $work, bool $detailed = false): array
     {
-        return [
+        $formatted = [
             'id' => $work->id,
             'title' => $work->title,
             'description' => $work->description,
             'status' => $work->status,
-            'is_published' => $work->is_published,
-            'votes_count' => $work->votes_count,
-            'required_votes' => $work->required_votes,
-            'vote_progress' => min(100, (int) round(($work->votes_count / max(1, $work->required_votes)) * 100)),
+            'is_published' => (bool) $work->is_published,
+            'votes_count' => (int) $work->votes_count,
+            'required_votes' => (int) $work->required_votes,
+            'vote_progress' => min(
+                100,
+                (int) round(
+                    ($work->votes_count / max(1, $work->required_votes)) * 100
+                )
+            ),
             'cover_url' => $work->cover_url,
             'category' => $work->category?->name,
             'submitted_name' => $work->submitted_name,
@@ -154,5 +241,16 @@ class WorkController extends Controller
                 'name' => $work->user?->name,
             ],
         ];
+
+        if ($work->getAttribute('has_voted') !== null) {
+            $formatted['has_voted'] = (bool) $work->getAttribute('has_voted');
+        }
+
+        if ($detailed) {
+            $formatted['submitted_email'] = $work->submitted_email;
+            $formatted['updated_at'] = $work->updated_at?->toDateTimeString();
+        }
+
+        return $formatted;
     }
 }
