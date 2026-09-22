@@ -176,7 +176,7 @@ async function request<T>(
         payload,
         response.status === 401
           ? "আপনার লগইন সেশন বৈধ নয়।"
-          : "অনুরোধটি সম্পন্ন করা যায়নি.",
+          : "অনুরোধটি সম্পন্ন করা যায়নি।",
       ),
       response.status,
       payload,
