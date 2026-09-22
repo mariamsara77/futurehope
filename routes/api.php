@@ -9,7 +9,11 @@ use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
 
-Route::get('/health', fn () => response()->json(['ok' => true, 'service' => 'futurehope-api']));
+Route::get('/health', fn () => response()->json([
+    'ok' => true,
+    'service' => 'futurehope-api',
+]));
+
 Route::get('/works', [WorkController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
@@ -41,6 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/my-works', [WorkController::class, 'myWorks']);
 
+    // Authenticated users may open published works; unpublished works are
+    // visible only to their owner or members with the work-vote permission.
+    Route::get('/works/{work}/view', [WorkController::class, 'view']);
+
     Route::middleware('permission:work-vote')->group(function () {
         Route::get('/works/pending', [WorkController::class, 'pending']);
         Route::post('/works/{work}/vote', [WorkController::class, 'vote']);
@@ -53,5 +61,5 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-// Public single-work route must come after /works/pending.
+// Public single-work route returns published works only.
 Route::get('/works/{work}', [WorkController::class, 'show']);
