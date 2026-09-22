@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function GoogleCallbackPage() {
-  const params = useSearchParams();
   const router = useRouter();
   const { completeGoogleLogin } = useAuth();
   const [message, setMessage] = useState("Google account যাচাই করা হচ্ছে…");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const error = params.get("error");
     const reason = params.get("reason");
@@ -39,7 +39,7 @@ export default function GoogleCallbackPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [params, router, completeGoogleLogin]);
+  }, [router, completeGoogleLogin]);
 
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center px-4 py-16 text-center">
