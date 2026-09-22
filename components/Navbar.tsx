@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import AuthButton from "@/components/AuthButton";
 
-const links=[{href:"/",label:"হোম"},{href:"/about",label:"আমাদের সম্পর্কে"},{href:"/activities",label:"কার্যক্রম"},{href:"/members",label:"সদস্যবৃন্দ"},{href:"/contact",label:"যোগাযোগ"}];
+const links=[{href:"/",label:"হোম"},{href:"/works",label:"কাজের প্রস্তাব"},{href:"/activities",label:"কার্যক্রম"},{href:"/members",label:"সদস্যবৃন্দ"},{href:"/how-it-works",label:"কীভাবে কাজ করে"}];
 
 export default function Navbar(){
  const pathname=usePathname(); const [open,setOpen]=useState(false);
