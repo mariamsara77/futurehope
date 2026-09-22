@@ -206,7 +206,13 @@ export async function getCategories() {
 }
 
 export async function submitWork(form: FormData) {
-  const payload = await request<{ work: Work; message: string }>("/works", { method: "POST", body: form });
+  // Public users may submit without auth; logged-in users should still send
+  // their Sanctum token so the backend can associate the work with the user.
+  const payload = await request<{ work: Work; message: string }>(
+    "/works",
+    { method: "POST", body: form },
+    Boolean(getStoredToken()),
+  );
   return payload;
 }
 
