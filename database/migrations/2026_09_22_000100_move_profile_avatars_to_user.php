@@ -3,7 +3,7 @@
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Eloquent\Relations;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Schema;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Avatar ownership is now User -> MediaLibrary. Preserve any existing
         // profile avatar media by re-pointing it to the related user.
-        $profileType = Relations::getMorphAlias(Profile::class);
+        $profileType = Relation::getMorphAlias(Profile::class);
         $userType = Relations::getMorphAlias(User::class);
 
         Media::query()
