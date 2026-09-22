@@ -7,7 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 const initial={phone:"",father_name:"",mother_name:"",present_address:"",permanent_address:"",education:"",blood_group:"",bio:""};
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refresh } = useAuth();
   const [profile,setProfile]=useState<Profile|null>(null);
   const [form,setForm]=useState(initial);
   const [image,setImage]=useState<File|null>(null);
@@ -17,11 +17,11 @@ export default function ProfilePage() {
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
 
-  useEffect(()=>{ if(!user){setLoading(false);return;} getProfile().then(p=>{setProfile(p);setForm({phone:p.phone||"",father_name:p.father_name||"",mother_name:p.mother_name||"",present_address:p.present_address||"",permanent_address:p.permanent_address||"",education:p.education||"",blood_group:p.blood_group||"",bio:p.bio||""});setPreview(p.avatar_url||"");}).catch(e=>setError(e instanceof ApiError?e.message:"Profile তথ্য আনা যায়নি।")).finally(()=>setLoading(false)); },[user]);
+  useEffect(()=>{ if(!user){setLoading(false);return;} getProfile().then(p=>{setProfile(p);setForm({phone:p.phone||"",father_name:p.father_name||"",mother_name:p.mother_name||"",present_address:p.present_address||"",permanent_address:p.permanent_address||"",education:p.education||"",blood_group:p.blood_group||"",bio:p.bio||""});setPreview(p.avatar_url||user.avatar||"");}).catch(e=>setError(e instanceof ApiError?e.message:"Profile তথ্য আনা যায়নি।")).finally(()=>setLoading(false)); },[user, refresh]);
 
   function chooseImage(e:ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];if(!file)return;if(file.size>2*1024*1024){setError("ছবির আকার সর্বোচ্চ ২ MB হতে হবে।");return;}setImage(file);setPreview(URL.createObjectURL(file));}
-  async function submit(e:FormEvent){e.preventDefault();setSaving(true);setMessage("");setError("");try{const p=await updateProfile(form,image);setProfile(p);setPreview(p.avatar_url||"");setImage(null);setMessage("Profile সফলভাবে সংরক্ষণ হয়েছে।");}catch(e){setError(e instanceof ApiError?e.message:"Profile সংরক্ষণ করা যায়নি।");}finally{setSaving(false);}}
-  async function removeAvatar(){setError("");try{const p=await deleteAvatar();setProfile(p);setPreview("");setMessage("Profile ছবি সরানো হয়েছে।");}catch(e){setError(e instanceof ApiError?e.message:"ছবি সরানো যায়নি।");}}
+  async function submit(e:FormEvent){e.preventDefault();setSaving(true);setMessage("");setError("");try{const p=await updateProfile(form,image);setProfile(p);setPreview(p.avatar_url||"");setImage(null);await refresh();setMessage("Profile সফলভাবে সংরক্ষণ হয়েছে।");}catch(e){setError(e instanceof ApiError?e.message:"Profile সংরক্ষণ করা যায়নি।");}finally{setSaving(false);}}
+  async function removeAvatar(){setError("");try{const p=await deleteAvatar();setProfile(p);setPreview(p.avatar_url||"");await refresh();setMessage("Profile ছবি সরানো হয়েছে।");}catch(e){setError(e instanceof ApiError?e.message:"ছবি সরানো যায়নি।");}}
 
   if(authLoading||loading) return <main className="mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8"><div className="h-72 animate-pulse rounded-3xl bg-zinc-200"/></main>;
   if(!user) return <main className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6"><div className="rounded-3xl bg-white p-10 shadow-sm ring-1 ring-zinc-200"><h1 className="text-3xl font-bold">Profile দেখতে লগইন করুন</h1><p className="mt-3 leading-7 text-zinc-500">লগইন করলে আপনার ব্যক্তিগত তথ্য, যোগাযোগ ও profile photo এখান থেকে পরিচালনা করতে পারবেন।</p></div></main>;
