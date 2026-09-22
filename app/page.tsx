@@ -1,21 +1,54 @@
 import Link from "next/link";
-import { demoActivities, demoPlans } from "@/data/foundation";
+import { getWorks } from "@/lib/api";
 
-const stats=[["০৩+","চলমান/পরিকল্পিত উদ্যোগ"],["০৪","পরবর্তী পরিকল্পনা"],["০১","সদস্য profile system"],["২৪/৭","তথ্য দেখার সুযোগ"]];
-const aims=[["মানুষের পাশে থাকা","প্রয়োজনের সময় মানবিক সহায়তা, সচেতনতা ও সহযোগিতার একটি সংগঠিত ব্যবস্থা তৈরি করা।"],["শিক্ষার সুযোগ তৈরি","শিক্ষার্থী ও তরুণদের জন্য শিক্ষা, দক্ষতা এবং ইতিবাচক অংশগ্রহণের সুযোগ বাড়ানো।"],["স্থানীয় উন্নয়ন","স্থানীয় মানুষের অংশগ্রহণে বাস্তব প্রয়োজনভিত্তিক এবং টেকসই উদ্যোগ পরিচালনা করা।"],["জবাবদিহিতা","কাজের পরিকল্পনা, দায়িত্ব, সময়সূচি ও অগ্রগতি সদস্যদের কাছে পরিষ্কারভাবে তুলে ধরা।"]];
-export default function HomePage(){
- return <div>
-  <section className="relative overflow-hidden bg-zinc-950"><div className="absolute inset-0 bg-[url('/village.jpg')] bg-cover bg-center opacity-30"/><div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/90 to-emerald-950/60"/><div className="relative mx-auto grid min-h-[720px] max-w-7xl items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_.9fr] lg:px-8">
-   <div className="max-w-4xl text-white"><span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-100">মানুষ • মানবতা • ভবিষ্যৎ</span><h1 className="mt-7 text-5xl font-bold leading-[1.15] sm:text-6xl lg:text-7xl">একতাবদ্ধ উদ্যোগে<br/><span className="text-emerald-300">সুন্দর ভবিষ্যৎ</span></h1><p className="mt-7 max-w-3xl text-lg leading-9 text-zinc-200 sm:text-xl">ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশন মানুষের জীবনমান উন্নয়ন, শিক্ষা, মানবিক সহায়তা, সামাজিক সচেতনতা ও স্থানীয় উন্নয়নের জন্য পরিকল্পিতভাবে কাজ করার একটি সম্মিলিত উদ্যোগ।</p><div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link href="/activities" className="rounded-2xl bg-emerald-500 px-6 py-3.5 text-center font-bold text-white hover:bg-emerald-400">আমাদের কার্যক্রম দেখুন</Link><Link href="/about" className="rounded-2xl border border-white/20 bg-white/10 px-6 py-3.5 text-center font-bold text-white hover:bg-white/15">ফাউন্ডেশন সম্পর্কে</Link></div></div>
-   <div className="rounded-3xl border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur sm:p-9"><p className="text-sm font-bold text-emerald-300">আমাদের কাজের পদ্ধতি</p><h2 className="mt-3 text-2xl font-bold leading-9 text-white sm:text-3xl">পরিকল্পনা → দায়িত্ব → বাস্তবায়ন → ফলাফল</h2><p className="mt-4 leading-8 text-zinc-300">কোন কাজ কখন, কোথায়, কারা করবে এবং কী উদ্দেশ্যে করবে—এই তথ্যগুলো ধাপে ধাপে নথিবদ্ধ করার একটি স্বচ্ছ কাঠামো তৈরি করা হচ্ছে।</p><div className="mt-7 grid grid-cols-2 gap-3">{stats.map(([n,l])=><div key={l} className="rounded-2xl border border-white/10 bg-black/10 p-4"><p className="text-2xl font-bold text-white">{n}</p><p className="mt-1 text-xs leading-5 text-zinc-300">{l}</p></div>)}</div></div>
-  </div></section>
+const aims = [
+  ["মানুষের পাশে থাকা", "প্রয়োজনের সময়ে মানবিক সহায়তা ও বাস্তব উদ্যোগকে সংগঠিত করা।"],
+  ["শিক্ষার সুযোগ", "শিক্ষার্থী ও তরুণদের জন্য প্রয়োজনভিত্তিক শিক্ষা ও অংশগ্রহণের সুযোগ তৈরি করা।"],
+  ["স্থানীয় উন্নয়ন", "স্থানীয় মানুষের প্রস্তাবকে সদস্যদের অংশগ্রহণে বাস্তব কাজে রূপ দেওয়া।"],
+  ["জবাবদিহিতা", "কাজের প্রস্তাব থেকে অনুমোদন পর্যন্ত workflow পরিষ্কার রাখা।"],
+];
 
-  <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8"><div className="max-w-3xl"><p className="text-sm font-bold text-emerald-700">আমাদের উদ্দেশ্য</p><h2 className="mt-2 text-4xl font-bold sm:text-5xl">কাজ শুধু ঘোষণা নয়—প্রতিটি উদ্যোগের একটি উদ্দেশ্য ও দায়িত্ব থাকে</h2><p className="mt-5 text-lg leading-9 text-zinc-500">ফাউন্ডেশনের কাজকে এমনভাবে সাজানো হচ্ছে যাতে সদস্যরা নিজেদের দায়িত্ব, আগামী কাজ এবং সংগঠনের অগ্রগতি একই জায়গা থেকে বুঝতে পারেন।</p></div><div className="mt-12 grid gap-5 md:grid-cols-2">{aims.map(([t,d],i)=><article key={t} className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm sm:p-8"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 font-bold text-emerald-700">০{i+1}</div><h3 className="mt-6 text-2xl font-bold">{t}</h3><p className="mt-3 text-base leading-8 text-zinc-500">{d}</p></article>)}</div></section>
+export default async function HomePage() {
+  const works = await getWorks().catch(() => []);
 
-  <section className="bg-zinc-100/70 py-24"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="text-sm font-bold text-emerald-700">বর্তমান কাজ</p><h2 className="mt-2 text-4xl font-bold sm:text-5xl">ফাউন্ডেশন এখন যে কাজগুলো করছে</h2></div><Link href="/activities" className="font-bold text-emerald-700">সব কার্যক্রম →</Link></div><div className="mt-12 grid gap-6 lg:grid-cols-3">{demoActivities.map((item,i)=><article key={item.id} className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-zinc-200"><div className="flex items-center justify-between"><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">{item.category}</span><span className="text-xs font-semibold text-zinc-400">{item.status==="ongoing"?"চলমান":item.status==="planned"?"পরিকল্পিত":"সম্পন্ন"}</span></div><h3 className="mt-5 text-2xl font-bold">{item.title}</h3><p className="mt-3 leading-8 text-zinc-500">{item.summary}</p><div className="mt-6 space-y-2 border-t border-zinc-100 pt-5 text-sm text-zinc-500"><p><b className="text-zinc-700">স্থান:</b> {item.location}</p><p><b className="text-zinc-700">দায়িত্ব:</b> {item.lead}</p><p><b className="text-zinc-700">সময়:</b> {item.date}</p></div></article>)}</div></div></section>
+  return <div>
+    <section className="relative overflow-hidden bg-zinc-950">
+      <div className="absolute inset-0 bg-[url('/village.jpg')] bg-cover bg-center opacity-25" />
+      <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/90 to-emerald-950/60" />
+      <div className="relative mx-auto grid min-h-[650px] max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.1fr_.9fr] lg:px-8">
+        <div className="max-w-4xl text-white">
+          <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-100">মানুষ • মানবতা • ভবিষ্যৎ</span>
+          <h1 className="mt-7 text-5xl font-bold leading-[1.15] sm:text-6xl">একটি ভালো উদ্যোগ<br /><span className="text-emerald-300">সবার অংশগ্রহণে</span></h1>
+          <p className="mt-6 max-w-2xl text-lg leading-9 text-zinc-200">একটি কাজের প্রস্তাব দিন, Foundation memberরা review ও vote করবেন, ১০টি valid vote হলে কাজটি স্বয়ংক্রিয়ভাবে approved হবে।</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/works" className="rounded-2xl bg-emerald-500 px-6 py-3.5 font-bold text-white hover:bg-emerald-400">কাজের প্রস্তাব দিন</Link>
+            <Link href="/how-it-works" className="rounded-2xl border border-white/20 bg-white/10 px-6 py-3.5 font-bold text-white hover:bg-white/15">কীভাবে কাজ করে</Link>
+          </div>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-white/10 p-7 text-white shadow-2xl backdrop-blur sm:p-9">
+          <p className="text-sm font-bold text-emerald-300">Workflow</p>
+          <div className="mt-5 space-y-3">
+            {["প্রস্তাব জমা", "Member review", "১০টি vote", "Auto approval", "কাজ প্রকাশ"].map((step, i) => <div key={step} className="flex items-center gap-4 rounded-2xl bg-white/5 p-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-sm font-bold">{i + 1}</span><span className="font-semibold">{step}</span></div>)}
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8"><div className="max-w-3xl"><p className="text-sm font-bold text-emerald-700">ভবিষ্যৎ পরিকল্পনা</p><h2 className="mt-2 text-4xl font-bold sm:text-5xl">আগামী দিনে কে, কোথায়, কী কাজ করবেন</h2><p className="mt-5 text-lg leading-9 text-zinc-500">নিচের demo planning structure এখন থেকেই সদস্যদের জন্য দেখানো হচ্ছে। পরে একই structure backend API থেকে dynamic data দিয়ে পূরণ করা যাবে।</p></div><div className="mt-12 space-y-4">{demoPlans.map((p,i)=><article key={p.id} className="grid gap-5 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm md:grid-cols-[160px_1fr_auto] md:items-center sm:p-7"><div><p className="text-sm font-bold text-emerald-700">{p.month}</p><p className="mt-1 text-xs text-zinc-400">{p.date}</p></div><div><h3 className="text-xl font-bold">{p.title}</h3><p className="mt-2 leading-7 text-zinc-500">{p.objective}</p><div className="mt-3 flex flex-wrap gap-2">{p.responsible.map(x=><span key={x} className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600">{x}</span>)}</div></div><div className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-500"><b className="text-zinc-700">স্থান</b><br/>{p.location}</div></article>)}</div></section>
+    <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      <div className="max-w-3xl"><p className="text-sm font-bold text-emerald-700">আমাদের উদ্দেশ্য</p><h2 className="mt-2 text-4xl font-bold sm:text-5xl">কম কথা, পরিষ্কার কাজ</h2><p className="mt-4 text-lg leading-8 text-zinc-500">মানুষের প্রয়োজন থেকে প্রস্তাব, সদস্যদের অংশগ্রহণ থেকে অনুমোদন এবং বাস্তব কাজ—পুরো প্রক্রিয়াটি সহজ ও বোঝার মতো রাখা হয়েছে।</p></div>
+      <div className="mt-10 grid gap-5 md:grid-cols-2">{aims.map(([title, text], i) => <article key={title} className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 font-bold text-emerald-700">০{i + 1}</span><h3 className="mt-5 text-xl font-bold">{title}</h3><p className="mt-2 leading-7 text-zinc-500">{text}</p></article>)}</div>
+    </section>
 
-  <section className="bg-emerald-950 py-20"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8"><div className="max-w-2xl text-white"><p className="text-sm font-bold text-emerald-300">সদস্যদের জন্য</p><h2 className="mt-2 text-3xl font-bold sm:text-4xl">নিজের Profile সম্পূর্ণ রাখুন</h2><p className="mt-3 leading-8 text-emerald-100">ভবিষ্যতে দায়িত্ব বণ্টন, যোগাযোগ, সদস্য directory ও কার্যক্রমের কাজে আপনার profile তথ্য ব্যবহার করা যাবে।</p></div><Link href="/profile" className="rounded-2xl bg-white px-6 py-3.5 text-center font-bold text-emerald-900 hover:bg-emerald-50">আমার Profile</Link></div></section>
- </div>;
+    <section className="bg-zinc-100/70 py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-bold text-emerald-700">অনুমোদিত কাজ</p><h2 className="mt-1 text-3xl font-bold sm:text-4xl">সাম্প্রতিক উদ্যোগ</h2></div><Link href="/activities" className="font-bold text-emerald-700">সব দেখুন →</Link></div>
+        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {works.slice(0, 3).map(work => <article key={work.id} className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-200">{work.cover_url && <img src={work.cover_url} alt="" className="h-44 w-full object-cover" />}<div className="p-6"><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{work.category || "সাধারণ"}</span><h3 className="mt-4 text-xl font-bold">{work.title}</h3><p className="mt-2 line-clamp-3 leading-7 text-zinc-500">{work.description}</p></div></article>)}
+          {works.length === 0 && <div className="md:col-span-2 lg:col-span-3 rounded-3xl border border-dashed border-zinc-300 p-10 text-center text-zinc-500">এখনও কোনো approved কাজ প্রকাশিত হয়নি। আপনিই প্রথম প্রস্তাব দিতে পারেন।</div>}
+        </div>
+      </div>
+    </section>
+
+    <section className="bg-emerald-950 py-16"><div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8"><div className="text-white"><h2 className="text-3xl font-bold">নিজের profile সম্পূর্ণ রাখুন</h2><p className="mt-2 text-emerald-100">Profile update-এর পরে admin review করে designation ও priority নির্ধারণ করবেন।</p></div><Link href="/profile" className="rounded-2xl bg-white px-6 py-3.5 text-center font-bold text-emerald-900">আমার Profile</Link></div></section>
+  </div>;
 }
