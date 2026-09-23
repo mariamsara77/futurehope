@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -22,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements HasMedia
 {
-    use HasFactory, Notifiable, HasApiTokens, HasRoles, InteractsWithMedia;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles, InteractsWithMedia, TwoFactorAuthenticatable;
 
     use HasTeams {
         HasTeams::teams as teamsRelation;
