@@ -1,6 +1,8 @@
 <?php
 
+use App\Mail\ContactMessageMail;
 use App\Models\ContactMessage;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -18,6 +20,47 @@ new class extends Component {
     {
         $this->selected = ContactMessage::findOrFail($id);
         Flux\Flux::modal('contact-message-view')->show();
+    }
+
+    public function retryMessage(int $id): void
+    {
+        $message = ContactMessage::findOrFail($id);
+
+        if ($message->mail_status === 'sent') {
+            Flux\Flux::toast('এই বার্তাটি ইতিমধ্যে পাঠানো হয়েছে।', variant: 'success');
+            return;
+        }
+
+        try {
+            $recipient = config('mail.contact_to');
+
+            if (!$recipient || (app()->isProduction() && config('mail.default') === 'log')) {
+                throw new \RuntimeException('Production mail delivery is not configured.');
+            }
+
+            $message->forceFill([
+                'mail_status' => 'pending',
+                'mail_error' => null,
+            ])->save();
+
+            Mail::to($recipient)->send(new ContactMessageMail($message));
+
+            $message->forceFill([
+                'mail_status' => 'sent',
+                'mail_error' => null,
+            ])->save();
+
+            Flux\Flux::toast('বার্তাটি আবার সফলভাবে পাঠানো হয়েছে।', variant: 'success');
+        } catch (\Throwable $e) {
+            report($e);
+
+            $message->forceFill([
+                'mail_status' => 'failed',
+                'mail_error' => $e->getMessage(),
+            ])->save();
+
+            Flux\Flux::toast('ইমেইল পাঠানো যায়নি। Mail configuration পরীক্ষা করুন।', variant: 'danger');
+        }
     }
 
     public function with(): array
@@ -72,7 +115,7 @@ new class extends Component {
                             <flux:table.cell>{{ $message->subject }}</flux:table.cell>
                             <flux:table.cell><flux:badge>{{ ucfirst($message->mail_status) }}</flux:badge></flux:table.cell>
                             <flux:table.cell>{{ $message->created_at?->format('d M Y, h:i A') }}</flux:table.cell>
-                            <flux:table.cell align="end"><flux:button size="sm" wire:click="viewMessage({{ $message->id }})">View</flux:button></flux:table.cell>
+                            <flux:table.cell align="end"><div class="flex justify-end gap-2"><flux:button size="sm" wire:click="viewMessage({{ $message->id }})">View</flux:button>@if($message->mail_status !== "sent")<flux:button size="sm" variant="subtle" wire:click="retryMessage({{ $message->id }})">Resend</flux:button>@endif</div></flux:table.cell>
                         </flux:table.row>
                     @empty
                         <flux:table.row><flux:table.cell colspan="5" class="py-8 text-center text-zinc-500">No contact messages found.</flux:table.cell></flux:table.row>

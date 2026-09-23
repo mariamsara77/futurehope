@@ -143,6 +143,10 @@ class AuthController extends Controller
 
     private function formatUser(User $user): array
     {
+        $user->loadMissing('profile');
+
+        $isMember = $user->hasRole('admin') || $user->profile?->status === 'active';
+
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -151,6 +155,8 @@ class AuthController extends Controller
             'avatar' => $user->avatar_url,
             'roles' => $user->getRoleNames()->values()->all(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
+            'is_member' => $isMember,
+            'profile_status' => $user->profile?->status,
         ];
     }
 }

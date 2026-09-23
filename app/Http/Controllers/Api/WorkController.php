@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Work;
 use App\Models\WorkVote;
 use Illuminate\Http\JsonResponse;
@@ -51,7 +52,15 @@ class WorkController extends Controller
 
     public function pending(Request $request): JsonResponse
     {
-        $userId = (int) $request->user()->id;
+        $user = $request->user();
+
+        if (!$this->isApprovedMember($user)) {
+            return response()->json([
+                'message' => 'আপনার profile এখনো member approval পায়নি।',
+            ], 403);
+        }
+
+        $userId = (int) $user->id;
 
         $works = Work::with(['user:id,name', 'category:id,name'])
             ->withExists([
@@ -86,17 +95,19 @@ class WorkController extends Controller
     {
         $user = $request->user();
 
+        $canReview = $this->isApprovedMember($user);
+
         if (
             !$work->is_published &&
             (int) $work->user_id !== (int) $user->id &&
-            !$user->can('work-vote')
+            !$canReview
         ) {
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
         $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name']);
 
-        if ($user->can('work-vote')) {
+        if ($canReview) {
             $work->setAttribute(
                 'has_voted',
                 $work->votes()->where('user_id', $user->id)->exists()
@@ -153,6 +164,12 @@ class WorkController extends Controller
     public function vote(Request $request, Work $work): JsonResponse
     {
         $user = $request->user();
+
+        if (!$this->isApprovedMember($user)) {
+            return response()->json([
+                'message' => 'ভোট দেওয়ার জন্য approved member profile প্রয়োজন।',
+            ], 403);
+        }
 
         $result = DB::transaction(function () use ($user, $work): array {
             $lockedWork = Work::query()
@@ -228,6 +245,17 @@ class WorkController extends Controller
                 ->map(fn (Work $work) => $this->format($work))
                 ->values(),
         ]);
+    }
+
+    private function isApprovedMember(User $user): bool
+    {
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        $user->loadMissing('profile');
+
+        return $user->profile?->status === 'active';
     }
 
     private function format(Work $work, bool $detailed = false): array

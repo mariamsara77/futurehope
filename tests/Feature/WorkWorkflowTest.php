@@ -23,7 +23,8 @@ class WorkWorkflowTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('user.roles.0', 'member');
+            ->assertJsonPath('user.roles.0', 'member')
+            ->assertJsonPath('user.is_member', false);
 
         $this->assertContains(
             'work-vote',
@@ -60,6 +61,8 @@ class WorkWorkflowTest extends TestCase
 
         $owner = User::factory()->create(['status' => 'active']);
         $owner->assignRole($memberRole);
+        $owner->profile()->create(['status' => 'active']);
+        $owner->profile()->create(['status' => 'active']);
 
         $work = Work::create([
             'user_id' => $owner->id,
@@ -81,6 +84,7 @@ class WorkWorkflowTest extends TestCase
 
         $member = User::factory()->create(['status' => 'active']);
         $member->assignRole($memberRole);
+        $member->profile()->create(['status' => 'active']);
 
         $this->actingAs($member, 'sanctum')
             ->getJson('/api/works/pending')
@@ -112,6 +116,7 @@ class WorkWorkflowTest extends TestCase
 
         $firstVoter = User::factory()->create(['status' => 'active']);
         $firstVoter->assignRole($memberRole);
+        $firstVoter->profile()->create(['status' => 'active']);
 
         $firstVote = $this->actingAs($firstVoter, 'sanctum')
             ->postJson('/api/works/' . $work->id . '/vote');
@@ -128,6 +133,7 @@ class WorkWorkflowTest extends TestCase
         for ($i = 2; $i <= 10; $i++) {
             $voter = User::factory()->create(['status' => 'active']);
             $voter->assignRole($memberRole);
+            $voter->profile()->create(['status' => 'active']);
 
             $response = $this->actingAs($voter, 'sanctum')
                 ->postJson('/api/works/' . $work->id . '/vote');
