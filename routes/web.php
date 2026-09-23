@@ -55,6 +55,10 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('/dashboard/permissions', 'pages::role.manage-permissions')->name('dashboard.permissions');
     });
 
+    Route::middleware(['can:contact-manage'])->group(function () {
+        Route::livewire('/dashboard/contact-messages', 'pages::contact.contact-manager')->name('dashboard.contact-messages');
+    });
+
     Route::middleware(['can:work-manage'])->group(function () {
         Route::livewire('/dashboard/works', 'pages::work.work-manager')->name('dashboard.works');
         Route::livewire('/dashboard/work-categories', 'pages::work.category-manager')->name('dashboard.work-categories');
