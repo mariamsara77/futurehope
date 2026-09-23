@@ -18,9 +18,15 @@ class EnsureTeamMembership
      */
     public function handle(Request $request, Closure $next, ?string $minimumRole = null): Response
     {
-        [$user, $team] = [$request->user(), $this->team($request)];
+        $user = $request->user();
+        $team = $this->team($request);
 
-        abort_if(! $user || ! $team || ! $user->belongsToTeam($team), 403);
+        if (! $team) {
+            abort_if(! $user, 403);
+            return $next($request);
+        }
+
+        abort_if(! $user || ! $user->belongsToTeam($team), 403);
 
         $this->ensureTeamMemberHasRequiredRole($user, $team, $minimumRole);
 
