@@ -62,4 +62,37 @@ class ContactController extends Controller
             ], 503);
         }
     }
+
+    public function index(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('contact-manage'), 403);
+
+        $validated = $request->validate([
+            'status' => ['nullable', 'in:pending,sent,failed'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $messages = ContactMessage::query()
+            ->when($validated['status'] ?? null, fn ($q, $status) => $q->where('mail_status', $status))
+            ->when($validated['search'] ?? null, function ($q, $search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('subject', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate($validated['per_page'] ?? 20);
+
+        return response()->json($messages);
+    }
+
+    public function show(Request $request, ContactMessage $contactMessage): JsonResponse
+    {
+        abort_unless($request->user()?->can('contact-manage'), 403);
+
+        return response()->json(['message' => $contactMessage]);
+    }
+
 }
