@@ -26,6 +26,9 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Prepare application key
+        run: php artisan key:generate --force
+
       - name: PHP syntax check
         run: find app routes config database -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
