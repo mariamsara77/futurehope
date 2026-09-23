@@ -33,7 +33,13 @@ class ContactController extends Controller
         ]);
 
         try {
-            Mail::to(config('mail.contact_to'))->send(new ContactMessageMail($contactMessage));
+            $recipient = config('mail.contact_to');
+
+            if (!$recipient || (app()->isProduction() && config('mail.default') === 'log')) {
+                throw new \RuntimeException('Production mail delivery is not configured.');
+            }
+
+            Mail::to($recipient)->send(new ContactMessageMail($contactMessage));
 
             $contactMessage->forceFill([
                 'mail_status' => 'sent',
