@@ -7,6 +7,7 @@ Route::middleware(['auth'])->group(function () {
 
     // === Dashboard & Analytics Routes ===
     Route::livewire('/', 'pages::admin.dashboard.dashboard')->name('home');
+    Route::get('/dashboard', fn () => redirect()->route('home'))->name('dashboard');
     Route::livewire('/dashboard/session-manage', 'pages::admin.dashboard.session-manage')->name('dashboard.session');
     
     // Visitor & Analytics (Activity Log View)
