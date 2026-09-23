@@ -34,7 +34,7 @@
             <!-- Admin Management Group -->
             @if(auth()->user()->can('user-manage') || auth()->user()->can('designation-manage') ||
             auth()->user()->can('role-manage') || auth()->user()->can('permission-manage') ||
-            auth()->user()->can('work-manage'))
+            auth()->user()->can('work-manage') || auth()->user()->can('contact-manage'))
             <flux:sidebar.group :heading="__('Administration')" class="grid mt-4">
 
                 @can('user-manage')
@@ -62,6 +62,13 @@
                 <flux:sidebar.item icon="key" :href="route('dashboard.permissions')"
                     :current="request()->routeIs('dashboard.permissions')" wire:navigate>
                     {{ __('Permissions Manage') }}
+                </flux:sidebar.item>
+                @endcan
+
+                @can('contact-manage')
+                <flux:sidebar.item icon="envelope" :href="route('dashboard.contact-messages')"
+                    :current="request()->routeIs('dashboard.contact-messages')" wire:navigate>
+                    {{ __('Contact Messages') }}
                 </flux:sidebar.item>
                 @endcan
 
