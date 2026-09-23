@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AdminProfileController;
 use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
+use App\Http\Controllers\Api\ContactController;
 
 Route::get('/health', fn () => response()->json([
     'ok' => true,
@@ -17,6 +18,7 @@ Route::get('/health', fn () => response()->json([
 Route::get('/works', [WorkController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,10');
 
 // Visitors and logged-in users can submit suggestions.
 Route::post('/works', [WorkController::class, 'store'])->middleware('throttle:10,1');
