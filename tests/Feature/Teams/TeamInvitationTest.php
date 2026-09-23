@@ -102,7 +102,7 @@ class TeamInvitationTest extends TestCase
         $response = Livewire::test('pages::teams.pending-invitations-modal')
             ->call('acceptInvitation', $invitation->code);
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('dashboard'));
 
         $this->assertTrue(session('team-invitation-accepted'));
 
