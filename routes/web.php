@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth'])->group(function () {
-    Route::view('/', 'welcome')->name('home');
+Route::view('/', 'welcome')->name('home');
 
+Route::middleware(['auth'])->group(function () {
     // === Dashboard & Analytics Routes ===
     Route::livewire('/dashboard', 'pages::admin.dashboard.dashboard')->name('dashboard');
     Route::livewire('/dashboard/session-manage', 'pages::admin.dashboard.session-manage')->name('dashboard.session');
