@@ -48,6 +48,11 @@ class Work extends Model implements HasMedia
 
     public function votes(): HasMany { return $this->hasMany(WorkVote::class); }
 
+    public function updates(): HasMany
+    {
+        return $this->hasMany(WorkUpdate::class)->latest();
+    }
+
     public function hasUserVoted(int $userId): bool
     {
         return $this->votes()->where('user_id', $userId)->exists();
