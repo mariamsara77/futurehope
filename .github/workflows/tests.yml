@@ -3,8 +3,10 @@ name: tests
 on:
   push:
     branches:
-      - main
+      - larvel-code
   pull_request:
+    branches:
+      - larvel-code
 
 permissions:
   contents: read
