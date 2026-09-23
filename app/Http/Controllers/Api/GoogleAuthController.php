@@ -45,7 +45,7 @@ class GoogleAuthController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         $frontend = rtrim((string) config('services.frontend_url'), '/');
-        $failureUrl = $frontend . '/auth/callback/google?error=google_login_failed';
+        $failureUrl = $frontend . '/auth/callback/google#error=google_login_failed';
 
         $sessionState = session()->pull('futurehope_google_oauth_state');
         $incomingState = (string) $request->string('state');
