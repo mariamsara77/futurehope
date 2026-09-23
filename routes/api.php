@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\TrackingController;
+use App\Http\Controllers\Api\ActivitySyncController;
 
 Route::get('/health', fn () => response()->json([
     'ok' => true,
@@ -19,6 +21,10 @@ Route::get('/works', [WorkController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,10');
+
+Route::post('/tracking/event', [TrackingController::class, 'trackEvent'])->middleware('throttle:120,1');
+Route::post('/tracking/pwa', [TrackingController::class, 'syncPwaStatus'])->middleware('throttle:30,1');
+Route::post('/tracking/sync', [ActivitySyncController::class, 'sync'])->middleware('throttle:30,1');
 
 // Visitors and logged-in users can submit suggestions.
 Route::post('/works', [WorkController::class, 'store'])->middleware('throttle:10,1');
