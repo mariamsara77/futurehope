@@ -31,7 +31,7 @@ class AuthenticationTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('dashboard', ['current_team' => $user->personalTeam()->slug], absolute: false));
 
         $this->assertAuthenticated();
     }
