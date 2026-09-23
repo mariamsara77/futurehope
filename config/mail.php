@@ -110,6 +110,8 @@ return [
     |
     */
 
+    'contact_to' => env('MAIL_CONTACT_TO', env('MAIL_FROM_ADDRESS')),
+
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
