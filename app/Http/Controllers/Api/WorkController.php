@@ -14,18 +14,38 @@ class WorkController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'in:suggested,voting,approved,running,upcoming,completed,rejected'],
+            'category_id' => ['nullable', 'integer', 'exists:work_categories,id'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
         $query = Work::with(['user:id,name', 'category:id,name'])
             ->where('is_published', true)
+            ->when($validated['search'] ?? null, function ($query, string $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', '%' . trim($search) . '%')
+                        ->orWhere('description', 'like', '%' . trim($search) . '%');
+                });
+            })
+            ->when($validated['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
+            ->when($validated['category_id'] ?? null, fn ($query, int $categoryId) => $query->where('category_id', $categoryId))
             ->latest();
 
-        if ($status = $request->query('status')) {
-            $query->where('status', $status);
-        }
+        $works = $query->paginate($validated['per_page'] ?? 12)->withQueryString();
 
         return response()->json([
-            'works' => $query->get()
+            'works' => collect($works->items())
                 ->map(fn (Work $work) => $this->format($work))
                 ->values(),
+            'meta' => [
+                'current_page' => $works->currentPage(),
+                'last_page' => $works->lastPage(),
+                'per_page' => $works->perPage(),
+                'total' => $works->total(),
+            ],
         ]);
     }
 
@@ -55,7 +75,7 @@ class WorkController extends Controller
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
-        $work->load(['user:id,name', 'category:id,name']);
+        $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name']);
 
         return response()->json([
             'work' => $this->format($work, true),
@@ -74,7 +94,7 @@ class WorkController extends Controller
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
-        $work->load(['user:id,name', 'category:id,name']);
+        $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name']);
 
         if ($user->can('work-vote')) {
             $work->setAttribute(
@@ -242,6 +262,16 @@ class WorkController extends Controller
 
         if ($detailed) {
             $formatted['updated_at'] = $work->updated_at?->toDateTimeString();
+            $formatted['updates'] = $work->updates
+                ->sortByDesc('created_at')
+                ->values()
+                ->map(fn ($update) => [
+                    'id' => $update->id,
+                    'title' => $update->title,
+                    'description' => $update->description,
+                    'author' => $update->user?->name,
+                    'created_at' => $update->created_at?->toDateTimeString(),
+                ]);
         }
 
         return $formatted;
