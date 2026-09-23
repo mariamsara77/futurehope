@@ -21,6 +21,10 @@ Route::get('/works', [WorkController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/members', [MemberController::class, 'index']);
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,10');
+Route::middleware('auth:sanctum')->prefix('admin/contact')->group(function () {
+    Route::get('/', [ContactController::class, 'index']);
+    Route::get('/{contactMessage}', [ContactController::class, 'show']);
+});
 
 Route::post('/tracking/event', [TrackingController::class, 'trackEvent'])->middleware('throttle:120,1');
 Route::post('/tracking/pwa', [TrackingController::class, 'syncPwaStatus'])->middleware('throttle:30,1');
