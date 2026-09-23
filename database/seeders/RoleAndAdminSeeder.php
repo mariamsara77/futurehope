@@ -26,6 +26,7 @@ class RoleAndAdminSeeder extends Seeder
             'permission-manage',
             'work-manage',
             'work-vote',
+            'contact-manage',
         ];
 
         foreach ($permissions as $permission) {
