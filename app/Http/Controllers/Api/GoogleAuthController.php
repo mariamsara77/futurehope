@@ -109,7 +109,8 @@ class GoogleAuthController extends Controller
             return redirect()->away($failureUrl . '&reason=unverified_email');
         }
 
-        $user = User::where('google_id', (string) $google['sub'])->first();
+        $googleId = (string) $google['sub'];
+        $user = User::where('google_id', $googleId)->first();
 
         if (!$user) {
             $user = User::where('email', $email)->first();
@@ -119,30 +120,31 @@ class GoogleAuthController extends Controller
                     return redirect()->away($failureUrl . '&reason=inactive_account');
                 }
 
-                $user->forceFill([
-                    'google_id' => (string) $google['sub'],
-                ])->save();
+                // One-time account linking only. Once google_id exists,
+                // subsequent Google logins never update profile fields.
+                if (!$user->google_id) {
+                    $user->forceFill([
+                        'google_id' => $googleId,
+                    ])->save();
+                } else {
+                    return redirect()->away($failureUrl . '&reason=google_account_mismatch');
+                }
             } else {
                 $user = User::create([
                     'name' => trim((string) ($google['name'] ?? strstr($email, '@', true))),
                     'email' => $email,
                     'password' => null,
-                    'google_id' => (string) $google['sub'],
+                    'google_id' => $googleId,
+                    'avatar' => !empty($google['picture']) ? (string) $google['picture'] : null,
                     'status' => 'active',
                 ]);
+
+                $this->ensureMemberRole($user);
             }
         }
 
         if ($user->status !== 'active') {
             return redirect()->away($failureUrl . '&reason=inactive_account');
-        }
-
-        $this->ensureMemberRole($user);
-
-        if (!$user->hasMedia('avatar') && !empty($google['picture'])) {
-            $user->forceFill([
-                'avatar' => (string) $google['picture'],
-            ])->save();
         }
 
         $oneTimeCode = Str::random(128);
@@ -179,8 +181,6 @@ class GoogleAuthController extends Controller
                 'message' => 'আপনার account এখন active নয়।',
             ], 403);
         }
-
-        $this->ensureMemberRole($user);
 
         $token = $user->createToken(
             $request->userAgent() ?: 'google-frontend'
