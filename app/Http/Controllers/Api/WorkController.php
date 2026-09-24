@@ -23,9 +23,19 @@ class WorkController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        // Keep the publication invariant self-healing for legacy or interrupted vote writes.
+        Work::query()
+            ->where('is_published', false)
+            ->whereColumn('votes_count', '>=', 'required_votes')
+            ->where('status', '!=', 'rejected')
+            ->update([
+                'status' => 'approved',
+                'is_published' => true,
+            ]);
+
         $query = Work::with(['user:id,name', 'category:id,name', 'media']);
 
-        if ($this->isApprovedMember($request->user())) {
+        if ($request->user()) {
             $query->withExists([
                 'votes as has_voted' => fn ($query) => $query->where('user_id', $request->user()->id),
             ]);
@@ -84,6 +94,8 @@ class WorkController extends Controller
                 'votes as has_voted' => fn ($query) => $query->where('user_id', $userId),
             ])
             ->where('is_published', false)
+            ->whereColumn('votes_count', '<', 'required_votes')
+            ->where('status', '!=', 'rejected')
             ->latest()
             ->get();
 
