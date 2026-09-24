@@ -157,7 +157,16 @@ class VisitorTracker {
   }
 
   public syncPwaStatus(isPwa: boolean): void {
-    this.trackEvent("pwa", "status", { is_pwa: isPwa });
+    this.scheduleSend(() => {
+      const payload = JSON.stringify({ is_pwa: isPwa, has_installed: isPwa });
+      void fetch(`${API_BASE}/api/tracking/pwa`, {
+        method: "POST",
+        keepalive: true,
+        credentials: "include",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: payload,
+      }).catch(() => undefined);
+    });
   }
 
   public flushOfflineQueue(): void {
@@ -171,7 +180,7 @@ class VisitorTracker {
         type: item.data.category, key: item.data.action, value: item.data.payload,
         timestamp: item.ts, id: item.data.js_visitor_id,
       }));
-      this.send(`${API_BASE}/api/tracking/sync`, {
+      this.send(`${API_BASE}/api/tracking/event`, {
         category: "offline", action: "sync", js_visitor_id: this.visitorId, session_id: this.sessionId,
         payload: { activities },
       });
