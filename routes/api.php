@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\AdminProfileController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
@@ -70,6 +71,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profiles/pending', [AdminProfileController::class, 'pending']);
         Route::post('/profiles/{profile}/approve', [AdminProfileController::class, 'approve']);
         Route::post('/profiles/{profile}/reject', [AdminProfileController::class, 'reject']);
+    });
+
+    Route::middleware('permission:user-manage')->prefix('admin/users')->group(function () {
+        Route::get('/', [AdminUserController::class, 'index']);
+        Route::get('/{user}', [AdminUserController::class, 'show']);
+        Route::post('/{user}', [AdminUserController::class, 'update']);
+        Route::put('/{user}', [AdminUserController::class, 'update']);
+        Route::delete('/{user}', [AdminUserController::class, 'destroy']);
     });
 });
 
