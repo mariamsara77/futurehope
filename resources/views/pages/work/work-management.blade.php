@@ -70,7 +70,7 @@ new class extends Component {
 
     public function editWork(int $id): void
     {
-        $work = Work::with(['media', 'updates.user:id,name'])->findOrFail($id);
+        $work = Work::with(['user:id,name,email', 'category:id,name', 'media', 'updates.user:id,name'])->findOrFail($id);
 
         $this->selectedWorkId = $work->id;
         $this->editingWork = $work;
@@ -242,12 +242,10 @@ new class extends Component {
     {
         return [
             'categories' => WorkCategory::query()
-                ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
             'works' => Work::query()
                 ->with(['user:id,name,email', 'category:id,name', 'media'])
-                ->withCount('votes')
                 ->when($this->search, function ($query) {
                     $search = trim($this->search);
 
@@ -552,7 +550,9 @@ new class extends Component {
                     <flux:select wire:model="category_id" label="Category">
                         <flux:select.option value="">General</flux:select.option>
                         @foreach ($categories as $category)
-                            <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
+                            <flux:select.option value="{{ $category->id }}">
+                                {{ $category->name }}{{ $category->is_active ? '' : ' (Inactive)' }}
+                            </flux:select.option>
                         @endforeach
                     </flux:select>
                 </div>
