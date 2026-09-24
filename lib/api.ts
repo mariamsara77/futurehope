@@ -184,7 +184,7 @@ export async function getWorks(params: { page?: number; perPage?: number; search
   if (params.search) query.set("search", params.search);
   if (params.status) query.set("status", params.status);
   if (params.categoryId) query.set("category_id", String(params.categoryId));
-  const payload = await request<PaginatedWorks>(`/works${query.toString() ? `?${query.toString()}` : ""}`);
+  const payload = await request<PaginatedWorks>(`/works${query.toString() ? `?${query.toString()}` : ""}`, { method: "GET" }, Boolean(getStoredToken()));
   return payload;
 }
 
