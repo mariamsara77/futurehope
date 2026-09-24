@@ -32,8 +32,16 @@ class WorkController extends Controller
         }
 
         $query
-            // Publication is driven by the vote threshold, not by the status field.
-            // Unpublished works remain visible here so approved members can vote.
+            // Only active works are public: published works, or works still below
+            // the required vote threshold. Publication does not depend on status.
+            ->where(function ($q) {
+                $q->where('is_published', true)
+                    ->orWhere(function ($q) {
+                        $q->where('is_published', false)
+                            ->whereColumn('votes_count', '<', 'required_votes')
+                            ->where('status', '!=', 'rejected');
+                    });
+            })
             ->when($validated['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . trim($search) . '%')
