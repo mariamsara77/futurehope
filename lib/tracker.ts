@@ -180,10 +180,13 @@ class VisitorTracker {
         type: item.data.category, key: item.data.action, value: item.data.payload,
         timestamp: item.ts, id: item.data.js_visitor_id,
       }));
-      this.send(`${API_BASE}/api/tracking/event`, {
-        category: "offline", action: "sync", js_visitor_id: this.visitorId, session_id: this.sessionId,
-        payload: { activities },
-      });
+      void fetch(`${API_BASE}/api/tracking/sync`, {
+        method: "POST",
+        keepalive: true,
+        credentials: "include",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ activities }),
+      }).catch(() => undefined);
       this.storage("tracking_queue", JSON.stringify([]));
     } catch {}
   }
