@@ -132,8 +132,10 @@ class VisitorTracker {
     if (this.isNavigating && this.navigationStart > 0) {
       loadTimeMs = Math.round(performance.now() - this.navigationStart);
     } else {
-      const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-      if (nav?.loadEventEnd > 0) loadTimeMs = Math.round(nav.loadEventEnd - nav.startTime);
+      const navEntry = performance.getEntriesByType("navigation")[0];
+      if (navEntry instanceof PerformanceNavigationTiming && navEntry.loadEventEnd > 0) {
+        loadTimeMs = Math.round(navEntry.loadEventEnd - navEntry.startTime);
+      }
     }
     this.isNavigating = false;
     this.navigationStart = 0;
