@@ -502,7 +502,7 @@ function WorkCard({
   user,
 }: {
   work: Work;
-  onVote: (id: string | number) => void;
+  onVote: (id: string | number, undo?: boolean) => void;
   voting: boolean;
   isMember: boolean;
   user: boolean;
@@ -548,7 +548,7 @@ function WorkCard({
           <button
             type="button"
             disabled={voting}
-            onClick={() => onVote(work.id)}
+            onClick={() => onVote(work.id, work.has_voted === true)}
             className="mt-4 w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {voting
