@@ -80,7 +80,7 @@ new #[Layout('components.layouts.admin')] class extends Component {
                     </flux:subheading>
                 </div>
             </div>
-            <flux:button variant="ghost" href="{{ route('admin.dashboard') }}" icon="arrow-left">Back</flux:button>
+            <flux:button variant="ghost" href="{{ route('dashboard.visitor') }}" icon="arrow-left">Back</flux:button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
