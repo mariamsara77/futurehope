@@ -372,7 +372,8 @@ export default function WorksPage() {
               ))
             )}
           </div>
-
+        </section>
+      </div>
 
       <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
     </main>
