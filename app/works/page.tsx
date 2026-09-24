@@ -166,7 +166,47 @@ export default function WorksPage() {
 
       setMessage(result.message);
 
-      await load();
+      setWorks((current) =>
+        current.map((work) =>
+          work.id === id
+            ? {
+                ...work,
+                votes_count: result.votes_count,
+                required_votes: result.required,
+                status: result.status,
+                is_published: result.approved,
+                vote_progress: Math.min(
+                  100,
+                  Math.round(
+                    (result.votes_count / Math.max(1, result.required)) * 100,
+                  ),
+                ),
+                has_voted: result.has_voted,
+              }
+            : work,
+        ),
+      );
+
+      setPending((current) =>
+        current.map((work) =>
+          work.id === id
+            ? {
+                ...work,
+                votes_count: result.votes_count,
+                required_votes: result.required,
+                status: result.status,
+                is_published: result.approved,
+                vote_progress: Math.min(
+                  100,
+                  Math.round(
+                    (result.votes_count / Math.max(1, result.required)) * 100,
+                  ),
+                ),
+                has_voted: result.has_voted,
+              }
+            : work,
+        ),
+      );
     } catch (e) {
       setError(
         e instanceof ApiError
