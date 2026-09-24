@@ -373,8 +373,8 @@ export default function WorksPage() {
         <section>
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-emerald-700">অনুমোদিত কাজ</p>
-              <h2 className="mt-1 text-2xl font-bold">জনসাধারণের জন্য</h2>
+              <p className="text-sm font-bold text-emerald-700">কাজসমূহ</p>
+              <h2 className="mt-1 text-2xl font-bold">প্রকাশিত ও ভোটিং কাজ</h2>
             </div>
             <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
               {works.length}টি
@@ -384,7 +384,7 @@ export default function WorksPage() {
           <div className="mt-5 space-y-4">
             {works.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-                এখনও কোনো অনুমোদিত কাজ প্রকাশিত হয়নি।
+                এখনও কোনো কাজ প্রকাশিত বা ভোটিংয়ে নেই।
               </div>
             ) : (
               works.map((work) => (
