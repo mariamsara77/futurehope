@@ -62,9 +62,16 @@ class Visitor extends Model
         return $this->hasMany(PageView::class);
     }
 
-    public function events(): HasMany
+    public function events(): HasManyThrough
     {
-        return $this->hasMany(VisitorEvent::class);
+        return $this->hasManyThrough(
+            VisitorEvent::class,
+            VisitorSession::class,
+            'visitor_id',
+            'session_id',
+            'id',
+            'id'
+        );
     }
 
     public function eventsThroughSessions(): HasManyThrough
