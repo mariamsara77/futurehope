@@ -1,6 +1,6 @@
 <?php
 
-use LivewireComponent;
+use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
 use App\Models\User;
