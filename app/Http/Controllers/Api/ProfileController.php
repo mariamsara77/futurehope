@@ -24,6 +24,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:20'],
             'father_name' => ['nullable', 'string', 'max:100'],
             'mother_name' => ['nullable', 'string', 'max:100'],
@@ -35,9 +36,21 @@ class ProfileController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ]);
 
+        if (array_key_exists('name', $validated)) {
+            $user->forceFill(['name' => trim((string) $validated['name'])])->save();
+        }
+
+        $profileData = collect($validated)->except('image', 'name')->toArray();
+        $existingStatus = $user->profile?->status;
+
         $profile = $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
-            [...collect($validated)->except('image')->toArray(), 'status' => 'pending']
+            [
+                ...$profileData,
+                // Do not remove voting access from an already-approved member
+                // merely because they edited their profile details.
+                'status' => $existingStatus === 'active' ? 'active' : 'pending',
+            ]
         );
 
         if ($request->hasFile('image')) {
