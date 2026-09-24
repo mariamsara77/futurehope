@@ -49,12 +49,12 @@ export default function WorksPage() {
     setError("");
 
     try {
-      const [published, cats] = await Promise.all([
-        getWorks(),
+      const [worksResponse, cats] = await Promise.all([
+        getWorks({ perPage: 50 }),
         getCategories(),
       ]);
 
-      setWorks(published.works);
+      setWorks(worksResponse.works);
       setCategories(cats);
 
     } catch (e) {
@@ -196,6 +196,14 @@ export default function WorksPage() {
       setVotingId(null);
     }
   }
+
+  const publishedWorks = works.filter((work) => work.is_published);
+  const votingWorks = works.filter(
+    (work) =>
+      !work.is_published &&
+      work.votes_count < work.required_votes &&
+      work.status !== "rejected",
+  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -347,30 +355,79 @@ export default function WorksPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-emerald-700">কাজসমূহ</p>
-              <h2 className="mt-1 text-2xl font-bold">সব সক্রিয় কাজ</h2>
+              <h2 className="mt-1 text-2xl font-bold">প্রকাশিত ও ভোটিং কাজ</h2>
             </div>
             <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
-              {works.length}টি
+              {publishedWorks.length + votingWorks.length}টি
             </span>
           </div>
 
-          <div className="mt-5 space-y-4">
-            {works.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-                এখনও কোনো সক্রিয় কাজ নেই।
+          <div className="mt-6 space-y-8">
+            <div>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold">প্রকাশিত কাজ</h3>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    প্রয়োজনীয় ভোট পূরণ করে প্রকাশিত কাজগুলো।
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  {publishedWorks.length}টি
+                </span>
               </div>
-            ) : (
-              works.map((work) => (
-                <WorkCard
-                  key={work.id}
-                  work={work}
-                  onVote={vote}
-                  voting={votingId === work.id}
-                  isMember={isMember}
-                  user={Boolean(user)}
-                />
-              ))
-            )}
+
+              <div className="mt-4 space-y-4">
+                {publishedWorks.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
+                    এখনও কোনো কাজ প্রকাশিত হয়নি।
+                  </div>
+                ) : (
+                  publishedWorks.map((work) => (
+                    <WorkCard
+                      key={work.id}
+                      work={work}
+                      onVote={vote}
+                      voting={votingId === work.id}
+                      isMember={isMember}
+                      user={Boolean(user)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold">ভোট চলছে</h3>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    প্রয়োজনীয় ভোট পূর্ণ না হওয়া কাজগুলো এখানে থাকবে। ভোট দিলে কাজটি তালিকা থেকে হারাবে না।
+                  </p>
+                </div>
+                <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
+                  {votingWorks.length}টি
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-4">
+                {votingWorks.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
+                    এই মুহূর্তে ভোট চলা কোনো কাজ নেই।
+                  </div>
+                ) : (
+                  votingWorks.map((work) => (
+                    <WorkCard
+                      key={work.id}
+                      work={work}
+                      onVote={vote}
+                      voting={votingId === work.id}
+                      isMember={isMember}
+                      user={Boolean(user)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -418,16 +475,31 @@ function WorkCard({
           {work.description}
         </p>
 
-        <div className="mt-5 flex items-center justify-between gap-4 border-t border-zinc-100 pt-4">
-          <span className="text-xs font-semibold text-zinc-500">
-            {work.votes_count}/{work.required_votes} ভোট
-          </span>
-          <Link
-            href={"/works/" + work.id}
-            className="text-sm font-bold text-emerald-700 hover:underline"
-          >
-            বিস্তারিত →
-          </Link>
+        <div className="mt-5 border-t border-zinc-100 pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-xs font-semibold text-zinc-500">
+              {work.votes_count}/{work.required_votes} ভোট
+            </span>
+            <Link
+              href={"/works/" + work.id}
+              className="text-sm font-bold text-emerald-700 hover:underline"
+            >
+              বিস্তারিত →
+            </Link>
+          </div>
+
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-100">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{ width: work.vote_progress + "%" }}
+            />
+          </div>
+
+          {work.has_voted === true && (
+            <div className="mt-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+              আপনার ভোট দেওয়া আছে
+            </div>
+          )}
         </div>
 
         {(!work.is_published || work.has_voted === true) && (
