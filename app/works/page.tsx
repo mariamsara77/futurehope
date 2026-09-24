@@ -186,26 +186,6 @@ export default function WorksPage() {
         ),
       );
 
-      setPending((current) =>
-        current.map((work) =>
-          work.id === id
-            ? {
-                ...work,
-                votes_count: result.votes_count,
-                required_votes: result.required,
-                status: result.status,
-                is_published: result.approved,
-                vote_progress: Math.min(
-                  100,
-                  Math.round(
-                    (result.votes_count / Math.max(1, result.required)) * 100,
-                  ),
-                ),
-                has_voted: result.has_voted,
-              }
-            : work,
-        ),
-      );
     } catch (e) {
       setError(
         e instanceof ApiError
@@ -393,61 +373,6 @@ export default function WorksPage() {
             )}
           </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold">{work.title}</h3>
-                            {work.has_voted && (
-                              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-600">
-                                ভোট দিয়েছেন
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-1 line-clamp-2 text-sm leading-6 text-zinc-500">
-                            {work.description}
-                          </p>
-                          <Link
-                            href={"/works/" + work.id}
-                            className="mt-2 inline-flex text-sm font-bold text-emerald-700 hover:underline"
-                          >
-                            বিস্তারিত দেখুন →
-                          </Link>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="flex justify-between text-xs font-semibold text-zinc-500">
-                          <span>
-                            {work.votes_count}/{work.required_votes} ভোট
-                          </span>
-                          <span>{work.vote_progress}%</span>
-                        </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
-                          <div
-                            className="h-full rounded-full bg-emerald-500 transition-all"
-                            style={{ width: work.vote_progress + "%" }}
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        disabled={votingId === work.id}
-                        onClick={() => void vote(work.id, work.has_voted === true)}
-                        className="mt-4 w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {votingId === work.id
-                          ? "ভোট হচ্ছে..."
-                          : work.has_voted
-                            ? "আপনার ভোট দেওয়া হয়েছে"
-                            : "এই কাজে ভোট দিন"}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
 
       <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
     </main>
