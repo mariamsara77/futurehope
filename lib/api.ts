@@ -57,6 +57,7 @@ export type Work = {
   required_votes: number;
   vote_progress: number;
   cover_url?: string | null;
+  images?: Array<{ id: number | string; url: string; thumb_url?: string | null; name?: string | null }>;
   category?: string | null;
   submitted_name?: string | null;
   created_at?: string | null;
@@ -208,8 +209,14 @@ export async function getWork(id: number | string) {
 }
 
 export async function voteWork(id: number | string) {
-  return request<{ message: string; votes_count: number; required: number; status: string; approved: boolean; has_voted: boolean }>(
+  return request<{ message: string; votes_count: number; required: number; status: string; approved: boolean; is_published: boolean; has_voted: boolean }>(
     `/works/${encodeURIComponent(String(id))}/vote`, { method: "POST" }, true
+  );
+}
+
+export async function undoVoteWork(id: number | string) {
+  return request<{ message: string; votes_count: number; required: number; status: string; approved: boolean; is_published: boolean; has_voted: boolean }>(
+    `/works/${encodeURIComponent(String(id))}/vote`, { method: "DELETE" }, true
   );
 }
 
