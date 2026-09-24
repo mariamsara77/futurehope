@@ -75,5 +75,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-// Public single-work route returns published works only.
+// Public single-work route returns published works and unpublished works that are still in voting.
 Route::get('/works/{work}', [WorkController::class, 'show']);
