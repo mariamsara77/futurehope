@@ -16,8 +16,10 @@ export default function AuthButton() {
 
   return (
     <div className="relative">
-      <button onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-left hover:bg-zinc-50">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-sm font-bold text-emerald-700">{(user.name || user.email).charAt(0).toUpperCase()}</span>
+      <button aria-label="প্রোফাইল মেনু" aria-expanded={menu} onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-2 py-1.5 text-left hover:bg-zinc-50 sm:px-3 sm:py-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-700 sm:h-9 sm:w-9">
+          {user.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : (user.name || user.email).charAt(0).toUpperCase()}
+        </span>
         <span className="hidden max-w-28 truncate text-sm font-semibold text-zinc-800 sm:block">{user.name || user.email}</span>
       </button>
       {menu && <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl">
