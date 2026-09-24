@@ -30,6 +30,7 @@ class AuthController extends Controller
         ]);
 
         $this->ensureMemberRole($user);
+        $this->ensureMemberProfile($user);
 
         if ($request->hasFile('image')) {
             $this->storeAvatar($user, $request);
@@ -77,6 +78,7 @@ class AuthController extends Controller
         }
 
         $this->ensureMemberRole($user);
+        $this->ensureMemberProfile($user);
 
         $token = $user->createToken(
             $request->userAgent() ?: 'frontend'
@@ -133,6 +135,14 @@ class AuthController extends Controller
         }
 
         $user->assignRole($memberRole);
+    }
+
+    private function ensureMemberProfile(User $user): void
+    {
+        $user->profile()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['status' => 'active']
+        );
     }
 
     private function storeAvatar(User $user, Request $request): void
