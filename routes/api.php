@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:work-vote')->group(function () {
         Route::get('/works/pending', [WorkController::class, 'pending']);
         Route::post('/works/{work}/vote', [WorkController::class, 'vote']);
+        Route::delete('/works/{work}/vote', [WorkController::class, 'undoVote']);
     });
 
     Route::middleware('permission:biodata-manage')->prefix('admin')->group(function () {
