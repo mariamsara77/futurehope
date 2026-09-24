@@ -321,8 +321,12 @@ class WorkController extends Controller
         ]);
     }
 
-    private function isApprovedMember(User $user): bool
+    private function isApprovedMember(?User $user): bool
     {
+        if (!$user) {
+            return false;
+        }
+
         if ($user->hasRole('admin')) {
             return true;
         }
