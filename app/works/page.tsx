@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import WorkGallery from "@/components/WorkGallery";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import AuthDialog from "@/components/AuthDialog";
 import {
@@ -9,6 +10,7 @@ import {
   getPendingWorks,
   getWorks,
   submitWork,
+  undoVoteWork,
   voteWork,
   type Category,
   type Work,
@@ -39,7 +41,7 @@ export default function WorksPage() {
     submitted_name: "",
     submitted_email: "",
   });
-  const [image, setImage] = useState<File | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [votingId, setVotingId] = useState<string | number | null>(null);
   const [message, setMessage] = useState("");
@@ -79,25 +81,31 @@ export default function WorksPage() {
     }
   }, [authLoading, load]);
 
-  function chooseImage(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
+  function chooseImages(e: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
 
-    if (!file) {
-      setImage(null);
+    if (files.length > 10) {
+      setError("একসাথে সর্বোচ্চ ১০টি ছবি নির্বাচন করতে পারবেন।");
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (files.some((file) => !file.type.startsWith("image/"))) {
       setError("শুধু image file নির্বাচন করুন।");
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      setError("ছবির আকার সর্বোচ্চ ৩ MB হতে হবে।");
+    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
+      setError("প্রতিটি ছবির আকার সর্বোচ্চ ৫ MB হতে হবে।");
       return;
     }
 
-    setImage(file);
+    const total = files.reduce((sum, file) => sum + file.size, 0);
+    if (total > 30 * 1024 * 1024) {
+      setError("সব ছবি মিলিয়ে সর্বোচ্চ ৩০ MB আপলোড করা যাবে।");
+      return;
+    }
+
+    setImages(files);
     setError("");
   }
 
@@ -117,9 +125,7 @@ export default function WorksPage() {
         }
       });
 
-      if (image) {
-        body.append("image", image);
-      }
+      images.forEach((image) => body.append("images[]", image));
 
       const result = await submitWork(body);
 
@@ -132,7 +138,7 @@ export default function WorksPage() {
         submitted_name: "",
         submitted_email: "",
       });
-      setImage(null);
+      setImages([]);
 
       await load();
     } catch (e) {
@@ -146,7 +152,7 @@ export default function WorksPage() {
     }
   }
 
-  async function vote(id: string | number) {
+  async function vote(id: string | number, undo = false) {
     if (!user) {
       setAuthOpen(true);
       return;
@@ -162,7 +168,7 @@ export default function WorksPage() {
     setMessage("");
 
     try {
-      const result = await voteWork(id);
+      const result = undo ? await undoVoteWork(id) : await voteWork(id);
 
       setMessage(result.message);
 
@@ -174,7 +180,7 @@ export default function WorksPage() {
                 votes_count: result.votes_count,
                 required_votes: result.required,
                 status: result.status,
-                is_published: result.approved,
+                is_published: result.is_published,
                 vote_progress: Math.min(
                   100,
                   Math.round(
@@ -310,13 +316,17 @@ export default function WorksPage() {
             />
 
             <label className="block rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm font-semibold text-zinc-600">
-              ছবি (ঐচ্ছিক)
+              ছবি (ঐচ্ছিক, সর্বোচ্চ ১০টি)
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                onChange={chooseImage}
+                multiple
+                onChange={chooseImages}
                 className="mt-2 block w-full text-xs"
               />
+              {images.length > 0 && (
+                <p className="mt-2 text-xs text-zinc-500">{images.length}টি ছবি নির্বাচিত</p>
+              )}
             </label>
 
             {error && (
@@ -460,10 +470,8 @@ export default function WorksPage() {
                       </div>
 
                       <button
-                        disabled={
-                          votingId === work.id || work.has_voted === true
-                        }
-                        onClick={() => void vote(work.id)}
+                        disabled={votingId === work.id}
+                        onClick={() => void vote(work.id, work.has_voted === true)}
                         className="mt-4 w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {votingId === work.id
@@ -501,15 +509,7 @@ function WorkCard({
 }) {
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-200 transition hover:-translate-y-0.5 hover:shadow-md">
-      {work.cover_url && (
-        <Link href={"/works/" + work.id} aria-label={work.title}>
-          <img
-            src={work.cover_url}
-            alt=""
-            className="h-48 w-full object-cover"
-          />
-        </Link>
-      )}
+      <WorkGallery images={work.images} coverUrl={work.cover_url} title={work.title} />
 
       <div className="p-6">
         <div className="flex items-center justify-between gap-3">
@@ -544,17 +544,17 @@ function WorkCard({
           </Link>
         </div>
 
-        {work.status === "voting" && (
+        {!work.is_published && (
           <button
             type="button"
-            disabled={voting || work.has_voted === true}
+            disabled={voting}
             onClick={() => onVote(work.id)}
             className="mt-4 w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {voting
-              ? "ভোট হচ্ছে..."
+              ? (work.has_voted ? "ভোট বাতিল হচ্ছে..." : "ভোট হচ্ছে...")
               : work.has_voted
-                ? "আপনার ভোট দেওয়া হয়েছে"
+                ? "ভোট বাতিল করুন"
                 : user && isMember
                   ? "এই কাজে ভোট দিন"
                   : "সদস্য হিসেবে ভোট দিন"}
