@@ -32,6 +32,7 @@ class Work extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();
+        $this->addMediaCollection('gallery');
     }
 
     public function registerMediaConversions(?Media $media = null): void
@@ -60,13 +61,29 @@ class Work extends Model implements HasMedia
 
     public function checkAutoApprove(): void
     {
-        if ($this->votes_count >= $this->required_votes && in_array($this->status, ['suggested', 'voting'], true)) {
-            $this->forceFill(['status' => 'approved', 'is_published' => true])->save();
+        if ($this->votes_count >= $this->required_votes) {
+            $this->forceFill([
+                'status' => 'approved',
+                'is_published' => true,
+            ])->save();
         }
     }
 
     public function getCoverUrlAttribute(): ?string
     {
-        return $this->getFirstMediaUrl('cover', 'thumb') ?: $this->getFirstMediaUrl('cover') ?: null;
+        return $this->getFirstMediaUrl('cover', 'thumb') ?: $this->getFirstMediaUrl('cover') ?: $this->getFirstMediaUrl('gallery', 'thumb') ?: $this->getFirstMediaUrl('gallery') ?: null;
+    }
+
+    public function getGalleryUrlsAttribute(): array
+    {
+        return $this->getMedia('gallery')
+            ->map(fn (Media $media) => [
+                'id' => $media->id,
+                'url' => $media->getUrl(),
+                'thumb_url' => $media->getUrl('thumb'),
+                'name' => $media->file_name,
+            ])
+            ->values()
+            ->all();
     }
 }
