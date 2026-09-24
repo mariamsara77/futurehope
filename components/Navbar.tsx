@@ -25,9 +25,12 @@ export default function Navbar() {
         <span className="min-w-0"><span className="block truncate text-sm font-bold text-zinc-950 sm:text-base">ফিউচার হোপ</span><span className="hidden text-xs text-zinc-500 sm:block">অ্যান্ড হিউম্যানিটি ফাউন্ডেশন</span></span>
       </Link>
       <nav className="hidden items-center gap-1 lg:flex" aria-label="প্রধান নেভিগেশন">{links.map(link=>{const active=link.href==="/" ? pathname==="/" : pathname.startsWith(link.href); return <Link key={link.href} href={link.href} className={`rounded-xl px-3.5 py-2 text-sm font-semibold transition ${active?"bg-emerald-50 text-emerald-700":"text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"}`}>{link.label}</Link>})}</nav>
-      <div className="hidden lg:flex"><AuthButton /></div>
-      <button aria-label={open?"মেনু বন্ধ করুন":"মেনু খুলুন"} aria-expanded={open} onClick={()=>setOpen(v=>!v)} className="rounded-xl border border-zinc-200 p-2.5 text-zinc-700 lg:hidden">{open?"×":"☰"}</button>
+      <div className="flex items-center gap-2">
+        <div className="lg:hidden"><AuthButton /></div>
+        <div className="hidden lg:flex"><AuthButton /></div>
+        <button aria-label={open?"মেনু বন্ধ করুন":"মেনু খুলুন"} aria-expanded={open} onClick={()=>setOpen(v=>!v)} className="rounded-xl border border-zinc-200 p-2.5 text-zinc-700 lg:hidden">{open?"×":"☰"}</button>
+      </div>
     </div>
-    {open && <div className="border-t border-zinc-100 bg-white px-4 pb-4 pt-2 lg:hidden"><nav className="space-y-1">{links.map(link=><Link key={link.href} href={link.href} onClick={()=>setOpen(false)} className="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">{link.label}</Link>)}</nav><div className="mt-3 border-t border-zinc-100 pt-3"><AuthButton /></div></div>}
+    {open && <div className="border-t border-zinc-100 bg-white px-4 pb-4 pt-2 lg:hidden"><nav className="space-y-1">{links.map(link=><Link key={link.href} href={link.href} onClick={()=>setOpen(false)} className="block rounded-xl px-3 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">{link.label}</Link>)}</nav><div className="mt-3 border-t border-zinc-100 pt-3"><p className="mb-2 text-xs font-semibold text-zinc-400">অ্যাকাউন্ট</p><AuthButton /></div></div>}
   </header>;
 }
