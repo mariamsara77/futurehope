@@ -91,10 +91,17 @@ class VisitorTracker {
     if (typeof navigator === "undefined") return;
     if (!navigator.onLine) { this.queueOffline(url, data); return; }
     const json = JSON.stringify(data);
-    if (navigator.sendBeacon) {
+    const isSameOrigin = typeof window !== "undefined" && new URL(url, window.location.href).origin === window.location.origin;
+
+    // The tracking API is normally on the separate Laravel domain.
+    // Do not use sendBeacon with application/json cross-origin: browsers can
+    // treat that payload as a CORS-preflighted request, and sendBeacon may
+    // report it as queued without giving us a usable fallback signal.
+    if (isSameOrigin && navigator.sendBeacon) {
       const blob = new Blob([json], { type: "application/json" });
       if (navigator.sendBeacon(url, blob)) return;
     }
+
     void fetch(url, {
       method: "POST",
       keepalive: true,
