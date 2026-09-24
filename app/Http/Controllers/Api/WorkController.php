@@ -23,7 +23,7 @@ class WorkController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $query = Work::with(['user:id,name', 'category:id,name'])
+        $query = Work::with(['user:id,name', 'category:id,name', 'media'])
             // Publication is driven by the vote threshold, not by the status field.
             // Unpublished works remain visible here so approved members can vote.
             ->when($validated['search'] ?? null, function ($query, string $search) {
@@ -63,7 +63,7 @@ class WorkController extends Controller
 
         $userId = (int) $user->id;
 
-        $works = Work::with(['user:id,name', 'category:id,name'])
+        $works = Work::with(['user:id,name', 'category:id,name', 'media'])
             ->withExists([
                 'votes as has_voted' => fn ($query) => $query->where('user_id', $userId),
             ])
@@ -89,7 +89,7 @@ class WorkController extends Controller
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
-        $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name']);
+        $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name', 'media']);
 
         return response()->json([
             'work' => $this->format($work, true),
@@ -110,7 +110,7 @@ class WorkController extends Controller
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
-        $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name']);
+        $work->load(['user:id,name', 'category:id,name', 'updates.user:id,name', 'media']);
 
         if ($canReview) {
             $work->setAttribute(
@@ -301,7 +301,7 @@ class WorkController extends Controller
 
     public function myWorks(Request $request): JsonResponse
     {
-        $works = Work::with('category:id,name')
+        $works = Work::with(['category:id,name', 'media'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
