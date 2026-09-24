@@ -51,63 +51,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return null;
   }, [refresh]);
 
-  const googleLogin = useCallback(() => {
-    return new Promise<AuthUser>((resolve, reject) => {
-      const width = 520;
-      const height = 680;
-      const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
-      const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
-      const popup = window.open(
-        API_BASE_URL + "/api/auth/google/redirect",
-        "futurehope-google-login",
-        "popup=yes,width=" + width + ",height=" + height + ",left=" + left + ",top=" + top + ",resizable=yes,scrollbars=yes",
-      );
-
-      if (!popup) {
-        reject(new Error("Google login popup blocked. Please allow popups for this site."));
-        return;
-      }
-
-      let settled = false;
-      const timer = window.setInterval(() => {
-        if (popup.closed) {
-          finish(() => reject(new Error("Google login window was closed before login completed.")));
-        }
-      }, 500);
-      const timeout = window.setTimeout(() => {
-        finish(() => reject(new Error("Google login timed out. Please try again.")));
-        if (!popup.closed) popup.close();
-      }, 120000);
-
-      const cleanup = () => {
-        window.removeEventListener("message", onMessage);
-        window.clearInterval(timer);
-        window.clearTimeout(timeout);
-      };
-
-      const finish = (callback: () => void) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        callback();
-      };
-
-      const onMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data?.type === "futurehope-google-auth" && event.data.user) {
-          setUser(event.data.user as AuthUser);
-          finish(() => resolve(event.data.user as AuthUser));
-        } else if (event.data?.type === "futurehope-google-auth-error") {
-          finish(() => reject(new Error(String(event.data.message || "Google login failed."))));
-        }
-      };
-
-      window.addEventListener("message", onMessage);
-
-
-    });
+  const googleLogin = useCallback(async () => {
+    // Use the current tab so browser popup blockers cannot prevent OAuth.
+    window.location.assign(API_BASE_URL + "/api/auth/google/redirect");
+    await new Promise<never>(() => {});
   }, []);
-
   const logout = useCallback(async (all = false) => {
     await logoutApi(all);
     setUser(null);
