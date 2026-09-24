@@ -69,7 +69,7 @@ export default function WorkDetailPage() {
       return;
     }
 
-    if (!work || work.is_published) {
+    if (!work || (work.is_published && !undo)) {
       return;
     }
 
@@ -137,7 +137,7 @@ export default function WorkDetailPage() {
     );
   }
 
-  const canVote = Boolean(user) && isMember && !work.is_published;
+  const canVote = Boolean(user) && isMember && (!work.is_published || work.has_voted === true);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
