@@ -1,43 +1,57 @@
 "use client";
 
 import { useEffect } from "react";
-import { API_BASE_URL } from "@/lib/api";
+import { usePathname } from "next/navigation";
+import { getTracker, trackPageView, startNavigation } from "@/lib/tracker";
 
 export default function VisitorTracker() {
-  useEffect(() => {
-    const controller = new AbortController();
+  const pathname = usePathname();
 
-    const send = async (category: string, action: string, payload: Record<string, unknown> = {}) => {
-      try {
-        await fetch(`${API_BASE_URL}/api/tracking/event`, {
-          method: "POST",
-          headers: { "Accept": "application/json", "Content-Type": "application/json" },
-          credentials: "include",
-          keepalive: true,
-          signal: controller.signal,
-          body: JSON.stringify({ category, action, payload }),
-        });
-      } catch {
-        // Analytics must never block or surface errors to visitors.
+  useEffect(() => {
+    getTracker().init();
+
+    const onPopState = () => startNavigation();
+    const onOnline = () => getTracker().flushOfflineQueue();
+
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("online", onOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pathname) return;
+    const timer = window.setTimeout(() => trackPageView(pathname), 120);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
+
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const anchor = target.closest("a");
+      if (!anchor) return;
+
+      if (
+        anchor.href &&
+        anchor.origin === window.location.origin &&
+        !anchor.target &&
+        !anchor.hasAttribute("download") &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        startNavigation();
       }
     };
 
-    const started = performance.now();
-    const page = {
-      url: window.location.href,
-      path: window.location.pathname,
-      title: document.title,
-      referrer: document.referrer || null,
-      is_pwa: window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone),
-    };
-
-    void send("page", "view", { ...page, load_time_ms: Math.round(performance.now() - started) });
-    void send("system", "device", {
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      screen_res: `${window.screen.width}x${window.screen.height}`,
-    });
-
-    return () => controller.abort();
+    document.addEventListener("click", onClick, { capture: true, passive: true });
+    return () => document.removeEventListener("click", onClick, { capture: true });
   }, []);
 
   return null;
