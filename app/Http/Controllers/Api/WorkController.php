@@ -23,7 +23,15 @@ class WorkController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $query = Work::with(['user:id,name', 'category:id,name', 'media'])
+        $query = Work::with(['user:id,name', 'category:id,name', 'media']);
+
+        if ($this->isApprovedMember($request->user())) {
+            $query->withExists([
+                'votes as has_voted' => fn ($query) => $query->where('user_id', $request->user()->id),
+            ]);
+        }
+
+        $query
             // Publication is driven by the vote threshold, not by the status field.
             // Unpublished works remain visible here so approved members can vote.
             ->when($validated['search'] ?? null, function ($query, string $search) {
