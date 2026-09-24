@@ -24,10 +24,8 @@ class WorkController extends Controller
         ]);
 
         $query = Work::with(['user:id,name', 'category:id,name'])
-            ->where(function ($query) {
-                $query->where('is_published', true)
-                    ->orWhere('status', 'voting');
-            })
+            // Publication is driven by the vote threshold, not by the status field.
+            // Unpublished works remain visible here so approved members can vote.
             ->when($validated['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . trim($search) . '%')
@@ -69,7 +67,6 @@ class WorkController extends Controller
             ->withExists([
                 'votes as has_voted' => fn ($query) => $query->where('user_id', $userId),
             ])
-            ->whereIn('status', ['suggested', 'voting'])
             ->where('is_published', false)
             ->latest()
             ->get();
@@ -83,7 +80,12 @@ class WorkController extends Controller
 
     public function show(Work $work): JsonResponse
     {
-        if (!$work->is_published && $work->status !== 'voting') {
+        if (!$work->is_published && $work->votes_count >= $work->required_votes) {
+            $work->checkAutoApprove();
+            $work->refresh();
+        }
+
+        if (!$work->is_published && $work->status === 'rejected') {
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
@@ -132,7 +134,9 @@ class WorkController extends Controller
                 Rule::exists('work_categories', 'id')
                     ->where(fn ($query) => $query->where('is_active', true)),
             ],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:3072'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'submitted_name' => ['nullable', 'string', 'max:100'],
             'submitted_email' => ['nullable', 'email', 'max:255'],
         ]);
@@ -152,8 +156,13 @@ class WorkController extends Controller
             'required_votes' => 10,
         ]);
 
-        if ($request->hasFile('image')) {
-            $work->addMediaFromRequest('image')->toMediaCollection('cover');
+        foreach ($request->file('images', []) as $image) {
+            $work->addMedia($image)->toMediaCollection('gallery');
+        }
+
+        // Backward-compatible single-image field.
+        if ($request->hasFile('image') && count($request->file('images', [])) === 0) {
+            $work->addMediaFromRequest('image')->toMediaCollection('gallery');
         }
 
         $work->load(['user:id,name', 'category:id,name']);
@@ -180,20 +189,18 @@ class WorkController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedWork->status !== 'voting') {
+            if ($lockedWork->is_published) {
                 return [
                     'ok' => false,
-                    'message' => 'এই কাজে এখন ভোট দেওয়া যাচ্ছে না।',
+                    'message' => 'কাজটি প্রয়োজনীয় ভোট পেয়ে ইতিমধ্যে প্রকাশিত হয়েছে।',
                     'status' => 422,
                 ];
             }
 
-            if (
-                WorkVote::query()
-                    ->where('work_id', $lockedWork->id)
-                    ->where('user_id', $user->id)
-                    ->exists()
-            ) {
+            if (WorkVote::query()
+                ->where('work_id', $lockedWork->id)
+                ->where('user_id', $user->id)
+                ->exists()) {
                 return [
                     'ok' => false,
                     'message' => 'আপনি ইতিমধ্যে এই কাজে ভোট দিয়েছেন।',
@@ -208,31 +215,87 @@ class WorkController extends Controller
 
             $lockedWork->refresh();
 
-            return [
-                'ok' => true,
-                'work' => $lockedWork,
-            ];
+            return ['ok' => true, 'work' => $lockedWork];
         });
 
         if (!$result['ok']) {
-            return response()->json(
-                ['message' => $result['message']],
-                $result['status']
-            );
+            return response()->json(['message' => $result['message']], $result['status']);
         }
 
         /** @var Work $updatedWork */
         $updatedWork = $result['work'];
 
         return response()->json([
-            'message' => $updatedWork->status === 'approved'
-                ? '১০টি ভোট পূর্ণ হয়েছে—কাজটি অনুমোদিত হয়েছে।'
+            'message' => $updatedWork->is_published
+                ? 'প্রয়োজনীয় ভোট পূর্ণ হয়েছে—কাজটি প্রকাশিত হয়েছে।'
                 : 'ভোট সফল হয়েছে।',
             'votes_count' => $updatedWork->votes_count,
             'required' => $updatedWork->required_votes,
             'status' => $updatedWork->status,
-            'approved' => $updatedWork->status === 'approved',
+            'approved' => (bool) $updatedWork->is_published,
+            'is_published' => (bool) $updatedWork->is_published,
             'has_voted' => true,
+        ]);
+    }
+
+    public function undoVote(Request $request, Work $work): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$this->isApprovedMember($user)) {
+            return response()->json([
+                'message' => 'ভোট বাতিল করার জন্য approved member profile প্রয়োজন।',
+            ], 403);
+        }
+
+        $result = DB::transaction(function () use ($user, $work): array {
+            $lockedWork = Work::query()
+                ->whereKey($work->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $vote = WorkVote::query()
+                ->where('work_id', $lockedWork->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$vote) {
+                return [
+                    'ok' => false,
+                    'message' => 'এই কাজে আপনার কোনো ভোট নেই।',
+                    'status' => 422,
+                ];
+            }
+
+            $vote->delete();
+            $lockedWork->refresh();
+
+            if ($lockedWork->votes_count < $lockedWork->required_votes) {
+                $lockedWork->forceFill(['is_published' => false, 'status' => 'voting'])->save();
+            }
+
+            $lockedWork->refresh();
+
+            return ['ok' => true, 'work' => $lockedWork];
+        });
+
+        if (!$result['ok']) {
+            return response()->json(['message' => $result['message']], $result['status']);
+        }
+
+        /** @var Work $updatedWork */
+        $updatedWork = $result['work'];
+
+        return response()->json([
+            'message' => $updatedWork->is_published
+                ? 'আপনার ভোট বাতিল করা হয়েছে।'
+                : 'আপনার ভোট বাতিল করা হয়েছে এবং কাজটি আবার ভোটিংয়ে ফিরে গেছে।',
+            'votes_count' => $updatedWork->votes_count,
+            'required' => $updatedWork->required_votes,
+            'status' => $updatedWork->status,
+            'approved' => (bool) $updatedWork->is_published,
+            'is_published' => (bool) $updatedWork->is_published,
+            'has_voted' => false,
         ]);
     }
 
@@ -278,6 +341,7 @@ class WorkController extends Controller
                 )
             ),
             'cover_url' => $work->cover_url,
+            'images' => $work->gallery_urls,
             'category' => $work->category?->name,
             'submitted_name' => $work->submitted_name,
             'created_at' => $work->created_at?->toDateTimeString(),
