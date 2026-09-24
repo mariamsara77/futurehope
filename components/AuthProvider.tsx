@@ -51,10 +51,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return null;
   }, [refresh]);
 
-  const googleLogin = useCallback(async () => {
+  const googleLogin = useCallback(() => {
     // Use the current tab so browser popup blockers cannot prevent OAuth.
     window.location.assign(API_BASE_URL + "/api/auth/google/redirect");
-    await new Promise<never>(() => {});
+    return new Promise<AuthUser>(() => undefined);
   }, []);
   const logout = useCallback(async (all = false) => {
     await logoutApi(all);
