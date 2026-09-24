@@ -72,13 +72,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/profiles/{profile}/reject', [AdminProfileController::class, 'reject']);
     });
 
-    Route::middleware('permission:user-manage')->prefix('admin/users')->group(function () {
-        Route::get('/', [AdminUserController::class, 'index']);
-        Route::get('/{user}', [AdminUserController::class, 'show']);
-        Route::post('/{user}', [AdminUserController::class, 'update']);
-        Route::put('/{user}', [AdminUserController::class, 'update']);
-        Route::delete('/{user}', [AdminUserController::class, 'destroy']);
-    });
 });
 
 // Public single-work route returns published works only.
