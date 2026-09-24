@@ -147,6 +147,9 @@ class GoogleAuthController extends Controller
             return redirect()->away($failureUrl . '&reason=inactive_account');
         }
 
+        $this->ensureMemberRole($user);
+        $this->ensureMemberProfile($user);
+
         $oneTimeCode = Str::random(128);
 
         Cache::put(
@@ -216,6 +219,8 @@ class GoogleAuthController extends Controller
 
     private function formatUser(User $user): array
     {
+        $user->loadMissing('profile');
+
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -224,7 +229,17 @@ class GoogleAuthController extends Controller
             'avatar' => $user->avatar_url,
             'roles' => $user->getRoleNames()->values()->all(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
+            'is_member' => $user->hasRole('admin') || $user->profile?->status === 'active',
+            'profile_status' => $user->profile?->status,
         ];
+    }
+
+    private function ensureMemberProfile(User $user): void
+    {
+        $user->profile()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['status' => 'active']
+        );
     }
 
     private function codeKey(string $code): string
