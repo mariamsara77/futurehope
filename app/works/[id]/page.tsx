@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import WorkGallery from "@/components/WorkGallery";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import AuthDialog from "@/components/AuthDialog";
 import { useAuth } from "@/components/AuthProvider";
-import { ApiError, getWork, voteWork, type Work } from "@/lib/api";
+import { ApiError, getWork, undoVoteWork, voteWork, type Work } from "@/lib/api";
 
 const statusLabels: Record<string, string> = {
   suggested: "প্রস্তাবিত",
@@ -57,7 +58,7 @@ export default function WorkDetailPage() {
     void load();
   }, [load]);
 
-  async function vote() {
+  async function vote(undo = false) {
     if (!user) {
       setAuthOpen(true);
       return;
@@ -68,7 +69,7 @@ export default function WorkDetailPage() {
       return;
     }
 
-    if (!work || work.has_voted || work.is_published || work.status !== "voting") {
+    if (!work || work.is_published) {
       return;
     }
 
@@ -77,7 +78,7 @@ export default function WorkDetailPage() {
     setMessage("");
 
     try {
-      const result = await voteWork(work.id);
+      const result = undo ? await undoVoteWork(work.id) : await voteWork(work.id);
 
       setMessage(result.message);
       setWork((current) =>
@@ -90,7 +91,7 @@ export default function WorkDetailPage() {
                 Math.round((result.votes_count / Math.max(1, result.required)) * 100),
               ),
               status: result.status,
-              is_published: result.approved,
+              is_published: result.is_published,
               has_voted: result.has_voted,
             }
           : current,
@@ -136,11 +137,7 @@ export default function WorkDetailPage() {
     );
   }
 
-  const canVote =
-    Boolean(user) &&
-    isMember &&
-    work.status === "voting" &&
-    work.has_voted !== true;
+  const canVote = Boolean(user) && isMember && !work.is_published;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
@@ -152,13 +149,7 @@ export default function WorkDetailPage() {
       </Link>
 
       <article className="mt-5 overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-zinc-200">
-        {work.cover_url && (
-          <img
-            src={work.cover_url}
-            alt=""
-            className="max-h-[520px] w-full object-cover"
-          />
-        )}
+        <WorkGallery images={work.images} coverUrl={work.cover_url} title={work.title} />
 
         <div className="p-6 sm:p-10">
           <div className="flex flex-wrap items-center gap-2">
@@ -232,18 +223,14 @@ export default function WorkDetailPage() {
             <button
               type="button"
               disabled={voting}
-              onClick={() => void vote()}
+              onClick={() => void vote(work.has_voted === true)}
               className="mt-7 w-full rounded-2xl bg-zinc-950 px-5 py-4 font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
             >
-              {voting ? "ভোট হচ্ছে..." : "এই কাজে ভোট দিন"}
+              {voting ? (work.has_voted ? "ভোট বাতিল হচ্ছে..." : "ভোট হচ্ছে...") : work.has_voted ? "ভোট বাতিল করুন" : "এই কাজে ভোট দিন"}
             </button>
           )}
 
-          {!work.is_published && work.has_voted === true && (
-            <div className="mt-7 rounded-2xl bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-700">
-              আপনি এই কাজে ইতিমধ্যে ভোট দিয়েছেন।
-            </div>
-          )}
+
 
           {!work.is_published && user && !isMember && (
             <div className="mt-7 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
