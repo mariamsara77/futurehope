@@ -766,7 +766,7 @@ new class extends Component {
 
                             <flux:table.cell>
                                 <flux:button variant="ghost" size="sm" icon="eye"
-                                    href="{{ route('admin.dashboard.visitor.details', $visitor->id) }}"
+                                    href="{{ route('dashboard.visitor.details', $visitor->id) }}"
                                     tooltip="View details" />
                             </flux:table.cell>
                         </flux:table.row>
