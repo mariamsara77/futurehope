@@ -24,7 +24,10 @@ class WorkController extends Controller
         ]);
 
         $query = Work::with(['user:id,name', 'category:id,name'])
-            ->where('is_published', true)
+            ->where(function ($query) {
+                $query->where('is_published', true)
+                    ->orWhere('status', 'voting');
+            })
             ->when($validated['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . trim($search) . '%')
@@ -80,7 +83,7 @@ class WorkController extends Controller
 
     public function show(Work $work): JsonResponse
     {
-        if (!$work->is_published) {
+        if (!$work->is_published && $work->status !== 'voting') {
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
@@ -177,7 +180,7 @@ class WorkController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedWork->is_published || $lockedWork->status !== 'voting') {
+            if ($lockedWork->status !== 'voting') {
                 return [
                     'ok' => false,
                     'message' => 'এই কাজে এখন ভোট দেওয়া যাচ্ছে না।',
