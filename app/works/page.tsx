@@ -7,6 +7,7 @@ import AuthDialog from "@/components/AuthDialog";
 import {
   ApiError,
   getCategories,
+  getPendingWorks,
   getWorks,
   submitWork,
   undoVoteWork,
@@ -29,6 +30,7 @@ const statusLabels: Record<string, string> = {
 export default function WorksPage() {
   const { user, isMember, loading: authLoading } = useAuth();
   const [works, setWorks] = useState<Work[]>([]);
+  const [pending, setPending] = useState<Work[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [submittedWork, setSubmittedWork] = useState<Work | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -54,9 +56,20 @@ export default function WorksPage() {
         getCategories(),
       ]);
 
-      setWorks(worksResponse.works);
+      setWorks(worksResponse.works.filter((work) => work.is_published));
       setCategories(cats);
 
+      if (isMember) {
+        try {
+          const pendingWorks = await getPendingWorks();
+          setPending(pendingWorks.filter((work) => !work.is_published));
+        } catch (e) {
+          setPending([]);
+          throw e;
+        }
+      } else {
+        setPending([]);
+      }
     } catch (e) {
       setError(
         e instanceof ApiError
@@ -162,29 +175,48 @@ export default function WorksPage() {
 
     try {
       const result = undo ? await undoVoteWork(id) : await voteWork(id);
+      const sourceWork =
+        works.find((work) => work.id === id) ??
+        pending.find((work) => work.id === id);
+
+      const updatedWork = sourceWork
+        ? {
+            ...sourceWork,
+            votes_count: result.votes_count,
+            required_votes: result.required,
+            status: result.status,
+            is_published: result.is_published,
+            vote_progress: Math.min(
+              100,
+              Math.round(
+                (result.votes_count / Math.max(1, result.required)) * 100,
+              ),
+            ),
+            has_voted: result.has_voted,
+          }
+        : null;
 
       setMessage(result.message);
 
-      setWorks((current) =>
-        current.map((work) =>
-          work.id === id
-            ? {
-                ...work,
-                votes_count: result.votes_count,
-                required_votes: result.required,
-                status: result.status,
-                is_published: result.is_published,
-                vote_progress: Math.min(
-                  100,
-                  Math.round(
-                    (result.votes_count / Math.max(1, result.required)) * 100,
-                  ),
-                ),
-                has_voted: result.has_voted,
-              }
-            : work,
-        ),
-      );
+      if (result.is_published) {
+        setPending((current) => current.filter((work) => work.id !== id));
+        setWorks((current) => {
+          const exists = current.some((work) => work.id === id);
+          if (!updatedWork) return current;
+          return exists
+            ? current.map((work) => (work.id === id ? updatedWork : work))
+            : [updatedWork, ...current];
+        });
+      } else {
+        setWorks((current) => current.filter((work) => work.id !== id));
+        setPending((current) => {
+          const exists = current.some((work) => work.id === id);
+          if (!updatedWork) return current;
+          return exists
+            ? current.map((work) => (work.id === id ? updatedWork : work))
+            : [updatedWork, ...current];
+        });
+      }
 
     } catch (e) {
       setError(
@@ -196,14 +228,6 @@ export default function WorksPage() {
       setVotingId(null);
     }
   }
-
-  const publishedWorks = works.filter((work) => work.is_published);
-  const votingWorks = works.filter(
-    (work) =>
-      !work.is_published &&
-      work.votes_count < work.required_votes &&
-      work.status !== "rejected",
-  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -355,80 +379,69 @@ export default function WorksPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-emerald-700">কাজসমূহ</p>
-              <h2 className="mt-1 text-2xl font-bold">প্রকাশিত ও ভোটিং কাজ</h2>
+              <h2 className="mt-1 text-2xl font-bold">প্রকাশিত কাজ</h2>
             </div>
             <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
-              {publishedWorks.length + votingWorks.length}টি
+              {works.length}টি
             </span>
           </div>
 
-          <div className="mt-6 space-y-8">
-            <div>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-bold">প্রকাশিত কাজ</h3>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    প্রয়োজনীয় ভোট পূরণ করে প্রকাশিত কাজগুলো।
-                  </p>
-                </div>
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                  {publishedWorks.length}টি
-                </span>
+          <div className="mt-5 space-y-4">
+            {works.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
+                এখনও কোনো কাজ প্রকাশিত হয়নি।
               </div>
-
-              <div className="mt-4 space-y-4">
-                {publishedWorks.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-                    এখনও কোনো কাজ প্রকাশিত হয়নি।
-                  </div>
-                ) : (
-                  publishedWorks.map((work) => (
-                    <WorkCard
-                      key={work.id}
-                      work={work}
-                      onVote={vote}
-                      voting={votingId === work.id}
-                      isMember={isMember}
-                      user={Boolean(user)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-bold">ভোট চলছে</h3>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    প্রয়োজনীয় ভোট পূর্ণ না হওয়া কাজগুলো এখানে থাকবে। ভোট দিলে কাজটি তালিকা থেকে হারাবে না।
-                  </p>
-                </div>
-                <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
-                  {votingWorks.length}টি
-                </span>
-              </div>
-
-              <div className="mt-4 space-y-4">
-                {votingWorks.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-                    এই মুহূর্তে ভোট চলা কোনো কাজ নেই।
-                  </div>
-                ) : (
-                  votingWorks.map((work) => (
-                    <WorkCard
-                      key={work.id}
-                      work={work}
-                      onVote={vote}
-                      voting={votingId === work.id}
-                      isMember={isMember}
-                      user={Boolean(user)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+            ) : (
+              works.map((work) => (
+                <WorkCard
+                  key={work.id}
+                  work={work}
+                  onVote={vote}
+                  voting={votingId === work.id}
+                  isMember={isMember}
+                  user={Boolean(user)}
+                />
+              ))
+            )}
           </div>
+
+          {!authLoading && isMember && (
+            <div className="mt-12">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-emerald-700">
+                    সদস্যদের ভোট
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold">ভোট চলছে</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
+                    প্রকাশিত হওয়ার আগে প্রয়োজনীয় ভোট সংগ্রহ করা হচ্ছে। আপনি ভোট দিলে কাজটি এখানেই থাকবে এবং আপনার ভোটের অবস্থা দেখা যাবে।
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
+                  {pending.length}টি
+                </span>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                {pending.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
+                    এই মুহূর্তে ভোটিংয়ের কোনো কাজ নেই।
+                  </div>
+                ) : (
+                  pending.map((work) => (
+                    <WorkCard
+                      key={work.id}
+                      work={work}
+                      onVote={vote}
+                      voting={votingId === work.id}
+                      isMember={isMember}
+                      user={Boolean(user)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
