@@ -139,7 +139,6 @@ export default function WorkDetailPage() {
   const canVote =
     Boolean(user) &&
     isMember &&
-    !work.is_published &&
     work.status === "voting" &&
     work.has_voted !== true;
 
