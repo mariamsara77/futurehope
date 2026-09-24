@@ -5,7 +5,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\AdminProfileController;
-use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\WorkController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MemberController;
