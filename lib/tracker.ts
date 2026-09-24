@@ -186,7 +186,7 @@ class VisitorTracker {
       this.scheduleSend(() => { this.trackEvent("system", "hardware_info"); this.storage("hw_tracked", "1", true); });
     }
     if (this.detectPwa() && !this.storage("pwa_synced", undefined, true)) {
-      this.syncPwaStatus(true as unknown as boolean);
+      this.syncPwaStatus(true);
       this.storage("pwa_synced", "1", true);
     }
     document.addEventListener("click", event => {
