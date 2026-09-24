@@ -7,7 +7,6 @@ import AuthDialog from "@/components/AuthDialog";
 import {
   ApiError,
   getCategories,
-  getPendingWorks,
   getWorks,
   submitWork,
   undoVoteWork,
@@ -30,7 +29,6 @@ const statusLabels: Record<string, string> = {
 export default function WorksPage() {
   const { user, isMember, loading: authLoading } = useAuth();
   const [works, setWorks] = useState<Work[]>([]);
-  const [pending, setPending] = useState<Work[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [submittedWork, setSubmittedWork] = useState<Work | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -59,11 +57,6 @@ export default function WorksPage() {
       setWorks(published.works);
       setCategories(cats);
 
-      if (isMember) {
-        setPending(await getPendingWorks());
-      } else {
-        setPending([]);
-      }
     } catch (e) {
       setError(
         e instanceof ApiError
@@ -374,7 +367,7 @@ export default function WorksPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-emerald-700">কাজসমূহ</p>
-              <h2 className="mt-1 text-2xl font-bold">প্রকাশিত ও ভোটিং কাজ</h2>
+              <h2 className="mt-1 text-2xl font-bold">সব সক্রিয় কাজ</h2>
             </div>
             <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
               {works.length}টি
@@ -384,7 +377,7 @@ export default function WorksPage() {
           <div className="mt-5 space-y-4">
             {works.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-                এখনও কোনো কাজ প্রকাশিত বা ভোটিংয়ে নেই।
+                এখনও কোনো সক্রিয় কাজ নেই।
               </div>
             ) : (
               works.map((work) => (
@@ -400,39 +393,6 @@ export default function WorksPage() {
             )}
           </div>
 
-          {!authLoading && isMember && (
-            <div className="mt-12">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-sm font-bold text-emerald-700">
-                    সদস্য review
-                  </p>
-                  <h2 className="mt-1 text-2xl font-bold">ভোটের অপেক্ষায়</h2>
-                </div>
-                <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
-                  {pending.length}টি
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {pending.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">
-                    এই মুহূর্তে pending কাজ নেই।
-                  </div>
-                ) : (
-                  pending.map((work) => (
-                    <div
-                      key={work.id}
-                      className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-200"
-                    >
-                      <div className="flex gap-4">
-                        {work.cover_url && (
-                          <img
-                            src={work.cover_url}
-                            alt=""
-                            className="h-20 w-24 shrink-0 rounded-2xl object-cover"
-                          />
-                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-bold">{work.title}</h3>
