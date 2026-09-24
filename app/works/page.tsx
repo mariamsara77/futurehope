@@ -337,7 +337,16 @@ export default function WorksPage() {
                 এখনও কোনো অনুমোদিত কাজ প্রকাশিত হয়নি।
               </div>
             ) : (
-              works.map((work) => <WorkCard key={work.id} work={work} />)
+              works.map((work) => (
+                <WorkCard
+                  key={work.id}
+                  work={work}
+                  onVote={vote}
+                  voting={votingId === work.id}
+                  isMember={isMember}
+                  user={Boolean(user)}
+                />
+              ))
             )}
           </div>
 
@@ -437,7 +446,19 @@ export default function WorksPage() {
   );
 }
 
-function WorkCard({ work }: { work: Work }) {
+function WorkCard({
+  work,
+  onVote,
+  voting,
+  isMember,
+  user,
+}: {
+  work: Work;
+  onVote: (id: string | number) => void;
+  voting: boolean;
+  isMember: boolean;
+  user: boolean;
+}) {
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-200 transition hover:-translate-y-0.5 hover:shadow-md">
       {work.cover_url && (
@@ -482,6 +503,23 @@ function WorkCard({ work }: { work: Work }) {
             বিস্তারিত →
           </Link>
         </div>
+
+        {work.status === "voting" && (
+          <button
+            type="button"
+            disabled={voting || work.has_voted === true}
+            onClick={() => onVote(work.id)}
+            className="mt-4 w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {voting
+              ? "ভোট হচ্ছে..."
+              : work.has_voted
+                ? "আপনার ভোট দেওয়া হয়েছে"
+                : user && isMember
+                  ? "এই কাজে ভোট দিন"
+                  : "সদস্য হিসেবে ভোট দিন"}
+          </button>
+        )}
       </div>
     </article>
   );
