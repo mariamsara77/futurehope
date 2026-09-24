@@ -544,7 +544,7 @@ function WorkCard({
           </Link>
         </div>
 
-        {!work.is_published && (
+        {(!work.is_published || work.has_voted === true) && (
           <button
             type="button"
             disabled={voting}
