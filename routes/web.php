@@ -61,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['can:work-manage'])->group(function () {
         Route::livewire('/dashboard/works', 'pages::work.work-manager')->name('dashboard.works');
+        Route::livewire('/dashboard/work-management', 'pages::work.work-management')->name('dashboard.work-management');
         Route::livewire('/dashboard/work-categories', 'pages::work.category-manager')->name('dashboard.work-categories');
     });
 

@@ -81,6 +81,10 @@
                     :current="request()->routeIs('dashboard.works')" wire:navigate>
                     {{ __('Work Submissions') }}
                 </flux:sidebar.item>
+                <flux:sidebar.item icon="wrench-screwdriver" :href="route('dashboard.work-management')"
+                    :current="request()->routeIs('dashboard.work-management')" wire:navigate>
+                    {{ __('Work Management') }}
+                </flux:sidebar.item>
                 @endcan
 
                 @can('activity-log-view')
