@@ -26,11 +26,13 @@ class WorkVote extends Model
         static::created(function ($vote) {
             $work = $vote->work;
             $work->increment('votes_count');
+            $work->refresh();
             $work->checkAutoApprove();
         });
 
         static::deleted(function ($vote) {
-            $vote->work->decrement('votes_count');
+            $work = $vote->work;
+            $work->decrement('votes_count');
         });
     }
 }
