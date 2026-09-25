@@ -220,14 +220,30 @@ export default function WorkDetailPage() {
           )}
 
           {canVote && (
-            <button
-              type="button"
-              disabled={voting}
-              onClick={() => void vote(work.has_voted === true)}
-              className="mt-7 w-full rounded-2xl bg-zinc-950 px-5 py-4 font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
-            >
-              {voting ? (work.has_voted ? "ভোট বাতিল হচ্ছে..." : "ভোট হচ্ছে...") : work.has_voted ? "ভোট বাতিল করুন" : "এই কাজে ভোট দিন"}
-            </button>
+            work.has_voted === true ? (
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  disabled={voting}
+                  onClick={() => void vote(true)}
+                  title="আপনার ভোট বাতিল করুন"
+                  aria-label="এই কাজের ভোট বাতিল করুন"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span aria-hidden="true">×</span>
+                  {voting ? "বাতিল হচ্ছে..." : "ভোট বাতিল"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={voting}
+                onClick={() => void vote(false)}
+                className="mt-7 w-full rounded-2xl bg-emerald-600 px-5 py-4 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
+              >
+                {voting ? "ভোট হচ্ছে..." : "এই কাজে ভোট দিন"}
+              </button>
+            )
           )}
 
 
