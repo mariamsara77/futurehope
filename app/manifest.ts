@@ -36,7 +36,14 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "540x960",
         type: "image/svg+xml",
         form_factor: "narrow",
-        label: "ফিউচার হোপ মোবাইল অ্যাপ",
+        label: "ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশন — মোবাইল",
+      },
+      {
+        src: "/pwa-screenshot-wide.svg",
+        sizes: "1280x720",
+        type: "image/svg+xml",
+        form_factor: "wide",
+        label: "ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশন — ওয়েব",
       },
     ],
     share_target: {
