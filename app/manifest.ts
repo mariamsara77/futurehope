@@ -5,9 +5,11 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশন",
     short_name: "ফিউচার হোপ",
     description: "মানুষের পাশে থেকে একটি সুন্দর, মানবিক ও সম্ভাবনাময় ভবিষ্যৎ গড়ার উদ্যোগ।",
+    id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
+    display_override: ["window-controls-overlay", "standalone"],
     orientation: "portrait-primary",
     background_color: "#fafafa",
     theme_color: "#059669",
@@ -28,6 +30,12 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any maskable",
       },
     ],
+    share_target: {
+      action: "/share",
+      method: "GET",
+      enctype: "application/x-www-form-urlencoded",
+      params: { title: "title", text: "text", url: "url" },
+    },
     shortcuts: [
       {
         name: "কাজগুলো দেখুন",
