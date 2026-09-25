@@ -27,8 +27,16 @@ class TrackingController extends Controller
         ]);
 
         try {
+            $ip = $this->resolveClientIp($request);
+
+            /** @var Visitor|null $visitor */
             $visitor = $request->attributes->get('current_visitor')
-                ?? $this->trackingService->getOrCreateVisitor($request);
+                ?? $this->trackingService->getOrCreateVisitorFromData([
+                    'ip'         => $ip,
+                    'user_agent' => (string) $request->userAgent(),
+                    'user_id'    => Auth::id(),
+                    'is_pwa'     => $this->trackingService->resolveIsPwa($request),
+                ]);
 
             if (! $visitor) {
                 return response()->json(['status' => 'ignored'], 200);
@@ -42,7 +50,6 @@ class TrackingController extends Controller
                 'last_seen_at' => now(),
             ];
 
-            // একবার true হলে sticky — আর false করা যাবে না
             if ($hasInstalled || $isPwa) {
                 $updateData['has_installed_pwa'] = true;
             }
@@ -50,7 +57,7 @@ class TrackingController extends Controller
             $visitor->update($updateData);
 
             $hash = $this->trackingService->makeHash(
-                $request->ip(),
+                $ip,
                 (string) $request->userAgent()
             );
             $this->trackingService->bustVisitorCache($hash);
@@ -59,7 +66,7 @@ class TrackingController extends Controller
                 'visitor_id'        => $visitor->id,
                 'is_pwa'            => $isPwa,
                 'has_installed_pwa' => $visitor->fresh()->has_installed_pwa,
-                'ip'                => $request->ip(),
+                'ip'                => $ip,
             ]);
 
             return response()->json([
@@ -75,7 +82,6 @@ class TrackingController extends Controller
                 'line'    => $e->getLine(),
             ]);
 
-            // Client retry এড়াতে 200
             return response()->json(['status' => 'error'], 200);
         }
     }
@@ -86,9 +92,16 @@ class TrackingController extends Controller
     public function trackEvent(Request $request): JsonResponse
     {
         try {
+            $ip = $this->resolveClientIp($request);
+
             /** @var Visitor|null $visitor */
             $visitor = $request->attributes->get('current_visitor')
-                ?? $this->trackingService->getOrCreateVisitor($request);
+                ?? $this->trackingService->getOrCreateVisitorFromData([
+                    'ip'         => $ip,
+                    'user_agent' => (string) $request->userAgent(),
+                    'user_id'    => Auth::id(),
+                    'is_pwa'     => $this->trackingService->resolveIsPwa($request),
+                ]);
 
             if (! $visitor) {
                 return response()->json(['status' => 'ignored'], 200);
@@ -99,17 +112,14 @@ class TrackingController extends Controller
             $payload  = $request->input('payload', []);
             $label    = $payload['label'] ?? $request->input('label');
 
-            // System event → device specs আপডেট
             if ($category === 'system') {
-                $this->updateVisitorSpecs($request, $visitor, $payload);
+                $this->updateVisitorSpecs($request, $visitor, $payload, $ip);
             }
 
-            // Page View → পুরো Visitor + Session + PageView পাইপলাইন
             if ($category === 'page' && $action === 'view') {
-                $this->handlePageView($request, $visitor, $payload);
+                $this->handlePageView($request, $visitor, $payload, $ip);
             }
 
-            // সব ইভেন্ট সেভ
             $this->trackingService->trackEvent($visitor, $category, $action, $label, $payload);
 
             return response()->json(['status' => 'success']);
@@ -120,25 +130,50 @@ class TrackingController extends Controller
                 'line'    => $e->getLine(),
             ]);
 
-            // সবসময় 200 দাও যাতে ক্লায়েন্ট রিট্রাই না করে
             return response()->json(['status' => 'error'], 200);
         }
     }
 
-    /* -----------------------------------------------------------------
-     |  PRIVATE HELPERS
-     | ----------------------------------------------------------------- */
-
     /**
-     * Frontend Page View হ্যান্ডেল করে (Middleware-এর সমতুল্য)
+     * Resolve the real visitor IP when Laravel is behind Cloudflare,
+     * Nginx, a load balancer, or another reverse proxy.
      */
-    private function handlePageView(Request $request, Visitor $visitor, array $payload): void
+    private function resolveClientIp(Request $request): string
     {
+        $candidates = [
+            $request->header('CF-Connecting-IP'),
+            $request->header('X-Real-IP'),
+            $request->header('X-Forwarded-For'),
+            $request->ip(),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (! is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            foreach (explode(',', $candidate) as $ip) {
+                $ip = trim($ip);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+
+        return '0.0.0.0';
+    }
+
+    private function handlePageView(
+        Request $request,
+        Visitor $visitor,
+        array $payload,
+        string $ip
+    ): void {
         $url  = $payload['url'] ?? $request->fullUrl();
         $path = $payload['path'] ?? (parse_url($url, PHP_URL_PATH) ?: '/');
 
         $data = [
-            'ip'           => $request->ip(),
+            'ip'           => $ip,
             'user_agent'   => (string) $request->userAgent(),
             'url'          => $url,
             'route_name'   => $this->guessRouteName($path, $payload['route_name'] ?? null),
@@ -156,9 +191,6 @@ class TrackingController extends Controller
         $this->trackingService->processTrackingPayload($data);
     }
 
-    /**
-     * Path থেকে route_name বানায়
-     */
     private function guessRouteName(?string $path, ?string $frontendName = null): ?string
     {
         if ($frontendName) {
@@ -174,9 +206,9 @@ class TrackingController extends Controller
             '/cart'     => 'cart',
             '/checkout' => 'checkout',
             '/account'  => 'account',
-            '/blog'     => 'blog.index',
-            '/contact'  => 'contact',
-            '/about'    => 'about',
+            '/blog'    => 'blog.index',
+            '/contact' => 'contact',
+            '/about'   => 'about',
         ];
 
         if (isset($map[$path])) {
@@ -194,11 +226,12 @@ class TrackingController extends Controller
         return str_replace('/', '.', trim($path, '/')) ?: 'home';
     }
 
-    /**
-     * System event থেকে device/timezone আপডেট
-     */
-    private function updateVisitorSpecs(Request $request, Visitor $visitor, array $data): void
-    {
+    private function updateVisitorSpecs(
+        Request $request,
+        Visitor $visitor,
+        array $data,
+        string $ip
+    ): void {
         $update = [];
 
         if (! empty($data['timezone'])) {
@@ -210,7 +243,7 @@ class TrackingController extends Controller
             $current = $visitor->device_model ?? '';
 
             if (! str_contains($current, $res)) {
-                $update['device_model'] = trim($current . ' | ' . $res, ' | ');
+                $update['device_model'] = trim($current . ' | ' . $res, ' |');
             }
         }
 
@@ -222,7 +255,7 @@ class TrackingController extends Controller
         $visitor->update($update);
 
         $hash = $this->trackingService->makeHash(
-            $request->ip(),
+            $ip,
             (string) $request->userAgent()
         );
 
