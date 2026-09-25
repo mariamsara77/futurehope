@@ -10,10 +10,10 @@ use App\Models\VisitorSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
-use Stevebauman\Location\Facades\Location;
 
 class VisitorTrackingService
 {
@@ -141,7 +141,7 @@ class VisitorTrackingService
     }
 
     /* -----------------------------------------------------------------
-     |  CORE: getOrCreateVisitorFromData (Race-condition safe)
+     |  CORE: getOrCreateVisitorFromData
      | ----------------------------------------------------------------- */
 
     public function getOrCreateVisitorFromData(array $data): ?Visitor
@@ -152,20 +152,21 @@ class VisitorTrackingService
 
         $cacheKey = "visitor:{$hash}";
 
-        // 1. Cache
+        // 1. Cache — also repair older visitors whose location is still empty.
         $cached = Cache::get($cacheKey);
         if ($cached instanceof Visitor) {
-            return $cached;
+            return $this->ensureVisitorLocation($cached, $ip);
         }
 
-        // 2. DB lookup
+        // 2. DB lookup — location enrichment also applies to existing visitors.
         $visitor = Visitor::where('hash', $hash)->first();
         if ($visitor) {
+            $visitor = $this->ensureVisitorLocation($visitor, $ip);
             Cache::put($cacheKey, $visitor, now()->addMinutes(30));
             return $visitor;
         }
 
-        // 3. Enrich missing fields
+        // 3. Enrich browser/device data and server-side IP location before create.
         $this->agent->setUserAgent($ua);
 
         $browserFamily = $data['browser_family'] ?? $this->agent->browser() ?: null;
@@ -173,24 +174,13 @@ class VisitorTrackingService
         $deviceType    = $data['device_type'] ?? $this->getDeviceType();
         $isBot         = $data['is_bot'] ?? $this->agent->isRobot();
 
-        $countryCode = $data['country_code'] ?? null;
-        $cityName    = $data['city_name'] ?? null;
-
-        if (! $countryCode || ! $cityName) {
-            try {
-                $position = Location::get($ip);
-                if ($position) {
-                    $countryCode = $countryCode ?: ($position->countryCode ?? null);
-                    $cityName    = $cityName ?: ($position->cityName ?? null);
-                }
-            } catch (\Throwable $e) {
-                // ignore location errors
-            }
-        }
+        $location = $this->resolveIpLocation($ip);
+        $countryCode = $data['country_code'] ?? $location['country_code'];
+        $cityName    = $data['city_name'] ?? $location['city_name'];
 
         $isPwa = (bool) ($data['is_pwa'] ?? false);
 
-        // 4. Create (catch duplicate)
+        // 4. Create (catch duplicate race).
         try {
             $visitor = Visitor::create([
                 'hash'              => $hash,
@@ -203,7 +193,7 @@ class VisitorTrackingService
                 'city_name'         => $cityName,
                 'is_bot'            => (bool) $isBot,
                 'is_pwa'            => $isPwa,
-                'has_installed_pwa' => $isPwa, // sticky from first visit if already PWA
+                'has_installed_pwa' => $isPwa,
                 'last_seen_at'      => now(),
             ]);
 
@@ -211,16 +201,123 @@ class VisitorTrackingService
 
             return $visitor;
         } catch (\Illuminate\Database\QueryException $e) {
-            // MySQL duplicate entry (1062)
             if (isset($e->errorInfo[1]) && (int) $e->errorInfo[1] === 1062) {
                 $visitor = Visitor::where('hash', $hash)->first();
                 if ($visitor) {
+                    $visitor = $this->ensureVisitorLocation($visitor, $ip);
                     Cache::put($cacheKey, $visitor, now()->addMinutes(30));
                     return $visitor;
                 }
             }
             throw $e;
         }
+    }
+
+    /**
+     * Fill missing location data for visitors created before location
+     * enrichment was working. Existing populated locations are never
+     * overwritten on every page view.
+     */
+    protected function ensureVisitorLocation(Visitor $visitor, ?string $ip): Visitor
+    {
+        if ($visitor->country_code && $visitor->city_name) {
+            return $visitor;
+        }
+
+        $location = $this->resolveIpLocation($ip ?: $visitor->ip_address);
+        if (! $location['country_code'] && ! $location['city_name']) {
+            return $visitor;
+        }
+
+        $visitor->forceFill([
+            'country_code' => $visitor->country_code ?: $location['country_code'],
+            'city_name'    => $visitor->city_name ?: $location['city_name'],
+            'last_seen_at' => now(),
+        ])->saveQuietly();
+
+        return $visitor->fresh() ?? $visitor;
+    }
+
+    /**
+     * Resolve a public visitor IP to country/city without requiring a
+     * client-side location permission. Results are cached for 24 hours per IP.
+     * Two providers are used as a graceful fallback so tracking continues if
+     * one provider is temporarily unavailable.
+     */
+    protected function resolveIpLocation(?string $ip): array
+    {
+        $empty = [
+            'country_code' => null,
+            'city_name'    => null,
+        ];
+
+        if (! $ip || ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return $empty;
+        }
+
+        return Cache::remember(
+            "visitor:loc:{$ip}",
+            now()->addDay(),
+            function () use ($ip, $empty) {
+                try {
+                    $response = Http::timeout(2.5)
+                        ->connectTimeout(1.5)
+                        ->acceptJson()
+                        ->get('https://ipwho.is/' . rawurlencode($ip));
+
+                    if ($response->successful()) {
+                        $data = $response->json();
+
+                        if (is_array($data) && ($data['success'] ?? true)) {
+                            $location = [
+                                'country_code' => isset($data['country_code'])
+                                    ? strtoupper((string) $data['country_code'])
+                                    : null,
+                                'city_name' => isset($data['city'])
+                                    ? trim((string) $data['city'])
+                                    : null,
+                            ];
+
+                            if ($location['country_code'] || $location['city_name']) {
+                                return $location;
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::notice('Primary visitor IP location lookup failed', [
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+
+                try {
+                    $response = Http::timeout(2.5)
+                        ->connectTimeout(1.5)
+                        ->acceptJson()
+                        ->get('https://ipapi.co/' . rawurlencode($ip) . '/json/');
+
+                    if ($response->successful()) {
+                        $data = $response->json();
+
+                        if (is_array($data)) {
+                            return [
+                                'country_code' => isset($data['country_code'])
+                                    ? strtoupper((string) $data['country_code'])
+                                    : null,
+                                'city_name' => isset($data['city'])
+                                    ? trim((string) $data['city'])
+                                    : null,
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::notice('Fallback visitor IP location lookup failed', [
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+
+                return $empty;
+            }
+        );
     }
 
     /* -----------------------------------------------------------------
@@ -362,9 +459,6 @@ class VisitorTrackingService
         return hash('sha256', $ip . $ua);
     }
 
-    /**
-     * সব related cache key একসাথে clear করে।
-     */
     public function bustVisitorCache(string $hash): void
     {
         Cache::forget("visitor:{$hash}");
