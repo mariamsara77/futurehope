@@ -30,6 +30,15 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
     ],
+    screenshots: [
+      {
+        src: "/pwa-screenshot-mobile.svg",
+        sizes: "540x960",
+        type: "image/svg+xml",
+        form_factor: "narrow",
+        label: "ফিউচার হোপ মোবাইল অ্যাপ",
+      },
+    ],
     share_target: {
       action: "/share",
       method: "GET",
