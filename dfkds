@@ -1,0 +1,18 @@
+[90m= [39m[34;4mStevebauman\Location\Position[39;24m {#8100
+    +[1mip[22m: [32m"[39m[32m8.8.8.8[39m[32m"[39m,
+    +[1mdriver[22m: [32m"[39m[32mStevebauman[39m\\[32mLocation[39m\\[32mDrivers[39m\\[32mIpApi[39m[32m"[39m,
+    +[1mcountryName[22m: [32m"[39m[32mUnited States[39m[32m"[39m,
+    +[1mcurrencyCode[22m: [32m"[39m[32mUSD[39m[32m"[39m,
+    +[1mcountryCode[22m: [32m"[39m[32mUS[39m[32m"[39m,
+    +[1mregionCode[22m: [32m"[39m[32mVA[39m[32m"[39m,
+    +[1mregionName[22m: [32m"[39m[32mVirginia[39m[32m"[39m,
+    +[1mcityName[22m: [32m"[39m[32mAshburn[39m[32m"[39m,
+    +[1mzipCode[22m: [32m"[39m[32m20149[39m[32m"[39m,
+    +[1misoCode[22m: [36mnull[39m,
+    +[1mpostalCode[22m: [36mnull[39m,
+    +[1mlatitude[22m: [32m"[39m[32m39.03[39m[32m"[39m,
+    +[1mlongitude[22m: [32m"[39m[32m-77.5[39m[32m"[39m,
+    +[1mmetroCode[22m: [36mnull[39m,
+    +[1mareaCode[22m: [36mnull[39m,
+    +[1mtimezone[22m: [32m"[39m[32mAmerica/New_York[39m[32m"[39m,
+  }

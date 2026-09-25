@@ -8,7 +8,7 @@ use App\Models\VisitorEvent;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.admin')] class extends Component {
+new  class extends Component {
     use WithPagination;
 
     public $visitorId;

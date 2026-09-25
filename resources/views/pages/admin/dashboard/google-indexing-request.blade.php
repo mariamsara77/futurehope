@@ -16,7 +16,7 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.admin')] class extends Component {
+new  class extends Component {
     use WithFileUploads, WithPagination;
 
     #[Validate('required|url|max:2048')]

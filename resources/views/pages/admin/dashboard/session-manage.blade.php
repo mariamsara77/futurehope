@@ -13,7 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.admin')] class extends Component {
+new  class extends Component {
     use WithPagination;
 
     public $search = '';

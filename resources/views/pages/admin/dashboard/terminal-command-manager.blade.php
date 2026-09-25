@@ -7,7 +7,7 @@ use Flux\Flux;
 use App\Jobs\RunArtisanCommandJob;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.admin')] class extends Component {
+new  class extends Component {
     public string $statusMessage = '';
     public array $commandHistory = [];
     public bool $isProcessing = false;

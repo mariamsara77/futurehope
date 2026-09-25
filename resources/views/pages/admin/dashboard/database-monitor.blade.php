@@ -5,7 +5,7 @@ use App\Services\MonitorService;
 use Illuminate\Support\Facades\Process;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.admin')] class extends Component {
+new  class extends Component {
     public string $tab = 'overview';
     public bool $showKillModal = false;
     public ?int $killPid = null;
@@ -137,16 +137,16 @@ new #[Layout('components.layouts.admin')] class extends Component {
 }; ?>
 
 @php
-    // Helper to safely get value from array or object
-    $val = function ($item, string $key, $default = '—') {
-        if (is_array($item)) {
-            return $item[$key] ?? $default;
-        }
-        if (is_object($item)) {
-            return $item->{$key} ?? $default;
-        }
-        return $default;
-    };
+// Helper to safely get value from array or object
+$val = function ($item, string $key, $default = '—') {
+if (is_array($item)) {
+return $item[$key] ?? $default;
+}
+if (is_object($item)) {
+return $item->{$key} ?? $default;
+}
+return $default;
+};
 @endphp
 
 <div class="space-y-6" x-data="{ autoRefresh: false, ticker: null }" x-init="$watch('autoRefresh', v => {
@@ -160,23 +160,23 @@ new #[Layout('components.layouts.admin')] class extends Component {
                 <flux:heading size="lg">Terminate Process</flux:heading>
                 <flux:text class="mt-2">
                     @if ($killMessage)
-                        {{ $killMessage }}
+                    {{ $killMessage }}
                     @else
-                        Kill PID <flux:badge color="red">{{ $killPid }}</flux:badge>
-                        <span class="font-mono text-sm">{{ $killCmd }}</span>?
+                    Kill PID <flux:badge color="red">{{ $killPid }}</flux:badge>
+                    <span class="font-mono text-sm">{{ $killCmd }}</span>?
                     @endif
                 </flux:text>
             </div>
 
             @if ($killMessage)
-                <div class="flex justify-end">
-                    <flux:button wire:click="closeKillModal" variant="primary">Close</flux:button>
-                </div>
+            <div class="flex justify-end">
+                <flux:button wire:click="closeKillModal" variant="primary">Close</flux:button>
+            </div>
             @else
-                <div class="flex gap-4 justify-end">
-                    <flux:button wire:click="closeKillModal" variant="ghost">Cancel</flux:button>
-                    <flux:button wire:click="executeKill" variant="danger">Kill Process</flux:button>
-                </div>
+            <div class="flex gap-4 justify-end">
+                <flux:button wire:click="closeKillModal" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="executeKill" variant="danger">Kill Process</flux:button>
+            </div>
             @endif
         </div>
     </flux:modal>
@@ -229,12 +229,13 @@ new #[Layout('components.layouts.admin')] class extends Component {
             </div>
 
             @if (!empty($jobs))
-                <div class="mt-8">
-                    <flux:heading size="lg" class="mb-4">Queue / Jobs</flux:heading>
-                    <flux:card>
-                        <pre class="text-sm overflow-x-auto">{{ is_string($jobs) ? $jobs : json_encode($jobs, JSON_PRETTY_PRINT) }}</pre>
-                    </flux:card>
-                </div>
+            <div class="mt-8">
+                <flux:heading size="lg" class="mb-4">Queue / Jobs</flux:heading>
+                <flux:card>
+                    <pre
+                        class="text-sm overflow-x-auto">{{ is_string($jobs) ? $jobs : json_encode($jobs, JSON_PRETTY_PRINT) }}</pre>
+                </flux:card>
+            </div>
             @endif
         </flux:tab.panel>
 
@@ -267,33 +268,32 @@ new #[Layout('components.layouts.admin')] class extends Component {
 
                 <flux:table.rows>
                     @forelse ($processes as $proc)
-                        <flux:table.row :key="$proc['pid']">
-                            <flux:table.cell class="font-mono">{{ $proc['pid'] }}</flux:table.cell>
-                            <flux:table.cell>{{ $proc['user'] }}</flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge
-                                    color="{{ $proc['cpu'] > 50 ? 'red' : ($proc['cpu'] > 20 ? 'amber' : 'zinc') }}">
-                                    {{ number_format($proc['cpu'], 1) }}%
-                                </flux:badge>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ number_format($proc['mem'], 1) }}%</flux:table.cell>
-                            <flux:table.cell>{{ $proc['rss_mb'] }} MB</flux:table.cell>
-                            <flux:table.cell class="max-w-xs truncate font-mono text-sm"
-                                title="{{ $proc['command'] }}">
-                                {{ $proc['command'] }}
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:button
-                                    wire:click="confirmKill({{ $proc['pid'] }}, '{{ addslashes($proc['command']) }}')"
-                                    variant="danger" size="sm" icon="x-mark" square />
-                            </flux:table.cell>
-                        </flux:table.row>
+                    <flux:table.row :key="$proc['pid']">
+                        <flux:table.cell class="font-mono">{{ $proc['pid'] }}</flux:table.cell>
+                        <flux:table.cell>{{ $proc['user'] }}</flux:table.cell>
+                        <flux:table.cell>
+                            <flux:badge
+                                color="{{ $proc['cpu'] > 50 ? 'red' : ($proc['cpu'] > 20 ? 'amber' : 'zinc') }}">
+                                {{ number_format($proc['cpu'], 1) }}%
+                            </flux:badge>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ number_format($proc['mem'], 1) }}%</flux:table.cell>
+                        <flux:table.cell>{{ $proc['rss_mb'] }} MB</flux:table.cell>
+                        <flux:table.cell class="max-w-xs truncate font-mono text-sm" title="{{ $proc['command'] }}">
+                            {{ $proc['command'] }}
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <flux:button
+                                wire:click="confirmKill({{ $proc['pid'] }}, '{{ addslashes($proc['command']) }}')"
+                                variant="danger" size="sm" icon="x-mark" square />
+                        </flux:table.cell>
+                    </flux:table.row>
                     @empty
-                        <flux:table.row>
-                            <flux:table.cell colspan="7">
-                                <flux:text>No processes found.</flux:text>
-                            </flux:table.cell>
-                        </flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="7">
+                            <flux:text>No processes found.</flux:text>
+                        </flux:table.cell>
+                    </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
@@ -315,18 +315,18 @@ new #[Layout('components.layouts.admin')] class extends Component {
 
                 <flux:table.rows>
                     @forelse ($tables as $i => $t)
-                        <flux:table.row :key="$val($t, 'name', $i)">
-                            <flux:table.cell>{{ $i + 1 }}</flux:table.cell>
-                            <flux:table.cell class="font-medium">{{ $val($t, 'name') }}</flux:table.cell>
-                            <flux:table.cell>{{ number_format((float) $val($t, 'size_mb', 0), 2) }} MB
-                            </flux:table.cell>
-                        </flux:table.row>
+                    <flux:table.row :key="$val($t, 'name', $i)">
+                        <flux:table.cell>{{ $i + 1 }}</flux:table.cell>
+                        <flux:table.cell class="font-medium">{{ $val($t, 'name') }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format((float) $val($t, 'size_mb', 0), 2) }} MB
+                        </flux:table.cell>
+                    </flux:table.row>
                     @empty
-                        <flux:table.row>
-                            <flux:table.cell colspan="3">
-                                <flux:text>No tables found.</flux:text>
-                            </flux:table.cell>
-                        </flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="3">
+                            <flux:text>No tables found.</flux:text>
+                        </flux:table.cell>
+                    </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
@@ -342,9 +342,10 @@ new #[Layout('components.layouts.admin')] class extends Component {
                 <flux:heading size="lg" class="mb-4">MySQL Status</flux:heading>
                 <flux:card>
                     @if (!empty($mysql))
-                        <pre class="text-sm overflow-x-auto whitespace-pre-wrap">{{ is_string($mysql) ? $mysql : json_encode($mysql, JSON_PRETTY_PRINT) }}</pre>
+                    <pre
+                        class="text-sm overflow-x-auto whitespace-pre-wrap">{{ is_string($mysql) ? $mysql : json_encode($mysql, JSON_PRETTY_PRINT) }}</pre>
                     @else
-                        <flux:text>No MySQL status data available.</flux:text>
+                    <flux:text>No MySQL status data available.</flux:text>
                     @endif
                 </flux:card>
             </div>
@@ -356,37 +357,37 @@ new #[Layout('components.layouts.admin')] class extends Component {
                 <flux:heading size="lg" class="mb-4">Active Queries / Process List</flux:heading>
 
                 @if (!empty($mysqlProcesses))
-                    <flux:table>
-                        <flux:table.columns>
-                            <flux:table.column>Id</flux:table.column>
-                            <flux:table.column>User</flux:table.column>
-                            <flux:table.column>Host</flux:table.column>
-                            <flux:table.column>DB</flux:table.column>
-                            <flux:table.column>Command</flux:table.column>
-                            <flux:table.column>Time</flux:table.column>
-                            <flux:table.column>State</flux:table.column>
-                            <flux:table.column>Info</flux:table.column>
-                        </flux:table.columns>
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Id</flux:table.column>
+                        <flux:table.column>User</flux:table.column>
+                        <flux:table.column>Host</flux:table.column>
+                        <flux:table.column>DB</flux:table.column>
+                        <flux:table.column>Command</flux:table.column>
+                        <flux:table.column>Time</flux:table.column>
+                        <flux:table.column>State</flux:table.column>
+                        <flux:table.column>Info</flux:table.column>
+                    </flux:table.columns>
 
-                        <flux:table.rows>
-                            @foreach ((array) $mysqlProcesses as $q)
-                                <flux:table.row>
-                                    <flux:table.cell class="font-mono">{{ $val($q, 'Id') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $val($q, 'User') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $val($q, 'Host') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $val($q, 'db') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $val($q, 'Command') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $val($q, 'Time') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $val($q, 'State') }}</flux:table.cell>
-                                    <flux:table.cell class="max-w-xs truncate font-mono text-xs">
-                                        {{ $val($q, 'Info') }}
-                                    </flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
+                    <flux:table.rows>
+                        @foreach ((array) $mysqlProcesses as $q)
+                        <flux:table.row>
+                            <flux:table.cell class="font-mono">{{ $val($q, 'Id') }}</flux:table.cell>
+                            <flux:table.cell>{{ $val($q, 'User') }}</flux:table.cell>
+                            <flux:table.cell>{{ $val($q, 'Host') }}</flux:table.cell>
+                            <flux:table.cell>{{ $val($q, 'db') }}</flux:table.cell>
+                            <flux:table.cell>{{ $val($q, 'Command') }}</flux:table.cell>
+                            <flux:table.cell>{{ $val($q, 'Time') }}</flux:table.cell>
+                            <flux:table.cell>{{ $val($q, 'State') }}</flux:table.cell>
+                            <flux:table.cell class="max-w-xs truncate font-mono text-xs">
+                                {{ $val($q, 'Info') }}
+                            </flux:table.cell>
+                        </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
                 @else
-                    <flux:text>No active queries.</flux:text>
+                <flux:text>No active queries.</flux:text>
                 @endif
             </div>
         </flux:tab.panel>
@@ -397,9 +398,10 @@ new #[Layout('components.layouts.admin')] class extends Component {
                 <flux:heading size="lg" class="mb-4">Disk I/O</flux:heading>
                 <flux:card>
                     @if (!empty($diskIO))
-                        <pre class="text-sm overflow-x-auto whitespace-pre-wrap">{{ is_string($diskIO) ? $diskIO : json_encode($diskIO, JSON_PRETTY_PRINT) }}</pre>
+                    <pre
+                        class="text-sm overflow-x-auto whitespace-pre-wrap">{{ is_string($diskIO) ? $diskIO : json_encode($diskIO, JSON_PRETTY_PRINT) }}</pre>
                     @else
-                        <flux:text>No disk I/O data available.</flux:text>
+                    <flux:text>No disk I/O data available.</flux:text>
                     @endif
                 </flux:card>
             </div>

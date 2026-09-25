@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Laravel\Ai\Facades\Ai;
 use Livewire\Attributes\Layout;
 
-new #[Layout('components.layouts.admin')] class extends Component {
+new  class extends Component {
     public string $tableName = '';
     public string $userInput = '';
     public array $availableTables = [];
