@@ -1,3 +1,5 @@
+"use client";
+
 export default function OfflinePage() {
   return (
     <main className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-5 py-16">
