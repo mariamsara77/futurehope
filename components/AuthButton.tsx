@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import AuthDialog from "@/components/AuthDialog";
 
@@ -9,14 +9,28 @@ export default function AuthButton() {
   const { user, loading, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
-  if (loading) return <div className="h-10 w-24 animate-pulse rounded-xl bg-zinc-100" />;
+  useEffect(() => {
+    if (!menu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setMenu(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menu]);
+
+  if (loading) return <div className="h-9 w-20 animate-pulse rounded-lg bg-zinc-100" />;
 
   if (!user) return <><button onClick={() => setOpen(true)} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">লগইন</button><AuthDialog open={open} onClose={() => setOpen(false)} /></>;
 
   return (
-    <div className="relative">
-      <button aria-label="প্রোফাইল মেনু" aria-expanded={menu} onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-2 py-1.5 text-left hover:bg-zinc-50 sm:px-3 sm:py-2">
+    <div ref={profileRef} className="relative">
+      <button aria-label="প্রোফাইল মেনু" aria-expanded={menu} onClick={() => setMenu((v) => !v)} className="flex items-center gap-2 rounded-xl bg-white px-2 py-1.5 text-left hover:bg-zinc-50 sm:px-3 sm:py-2">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-700 sm:h-9 sm:w-9">
           {user.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : (user.name || user.email).charAt(0).toUpperCase()}
         </span>
