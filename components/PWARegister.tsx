@@ -79,44 +79,48 @@ export default function PWARegister() {
       )}
 
       {showInstall && installEvent && (
-        <div className="fixed bottom-3 left-3 z-[65] flex max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full border border-zinc-200/80 bg-white/95 py-1.5 pl-1.5 pr-1.5 shadow-lg shadow-zinc-900/10 backdrop-blur-md md:hidden">
-          <img
-            src="/android-chrome-192x192.png"
-            alt=""
-            className="h-8 w-8 shrink-0 rounded-full"
-          />
-          <div className="min-w-0 pr-1">
-            <p className="text-xs font-bold leading-4 text-zinc-900">অ্যাপ ইনস্টল করুন</p>
-            <p className="text-[10px] leading-3.5 text-zinc-500">দ্রুত অ্যাক্সেস</p>
+        <div className="fixed inset-x-0 bottom-3 z-[65] flex justify-center px-3 md:hidden">
+          <div className="flex w-fit max-w-full items-center gap-2 rounded-full border border-zinc-200/80 bg-white/95 py-1.5 pl-1.5 pr-1.5 shadow-xl shadow-zinc-900/10 backdrop-blur-md">
+            <img
+              src="/android-chrome-192x192.png"
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-full"
+            />
+            <div className="min-w-0 pr-1">
+              <p className="text-xs font-bold leading-4 text-zinc-900">অ্যাপ ইনস্টল করুন</p>
+              <p className="text-[10px] leading-3.5 text-zinc-500">দ্রুত অ্যাক্সেস</p>
+            </div>
+            <button
+              type="button"
+              onClick={install}
+              className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700 active:scale-95"
+            >
+              ইনস্টল
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInstall(false)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base leading-none text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
+              aria-label="ইনস্টল বার্তা বন্ধ করুন"
+            >
+              ×
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={install}
-            className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700 active:scale-95"
-          >
-            ইনস্টল
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowInstall(false)}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base leading-none text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
-            aria-label="ইনস্টল বার্তা বন্ধ করুন"
-          >
-            ×
-          </button>
         </div>
       )}
 
       {updateReady && (
-        <div className="fixed bottom-3 left-3 z-[66] flex max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full border border-emerald-200/80 bg-white/95 py-1.5 pl-3 pr-1.5 shadow-lg shadow-zinc-900/10 backdrop-blur-md md:hidden">
-          <p className="text-xs font-semibold text-zinc-800">নতুন সংস্করণ প্রস্তুত</p>
-          <button
-            type="button"
-            onClick={update}
-            className="rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700 active:scale-95"
-          >
-            আপডেট
-          </button>
+        <div className="fixed inset-x-0 bottom-3 z-[66] flex justify-center px-3 md:hidden">
+          <div className="flex w-fit max-w-full items-center gap-2 rounded-full border border-emerald-200/80 bg-white/95 py-1.5 pl-3 pr-1.5 shadow-xl shadow-zinc-900/10 backdrop-blur-md">
+            <p className="text-xs font-semibold text-zinc-800">নতুন সংস্করণ প্রস্তুত</p>
+            <button
+              type="button"
+              onClick={update}
+              className="rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700 active:scale-95"
+            >
+              আপডেট
+            </button>
+          </div>
         </div>
       )}
     </>
