@@ -20,6 +20,10 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+        ], [
+            'email.unique' => 'এই ইমেইল দিয়ে আগে থেকেই একটি অ্যাকাউন্ট আছে। লগইন করুন অথবা Google দিয়ে প্রবেশ করুন।',
+            'password.min' => 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।',
+            'password.confirmed' => 'পাসওয়ার্ড দুটো একই হতে হবে।',
         ]);
 
         $user = User::create([
@@ -37,9 +41,7 @@ class AuthController extends Controller
             $user->refresh();
         }
 
-        $token = $user->createToken(
-            $request->userAgent() ?: 'frontend'
-        )->plainTextToken;
+        $token = $this->issueToken($user, $request, 'frontend');
 
         return response()->json([
             'message' => 'রেজিস্ট্রেশন সফল। এখন আপনার প্রোফাইল পূরণ করুন।',
@@ -61,28 +63,34 @@ class AuthController extends Controller
             strtolower(trim($credentials['email']))
         )->first();
 
-        if (
-            !$user ||
-            !$user->password ||
-            !Hash::check($credentials['password'], $user->password)
-        ) {
+        if (!$user) {
             throw ValidationException::withMessages([
-                'email' => ['ইমেইল অথবা পাসওয়ার্ড ভুল।'],
+                'email' => ['ইমেইল বা পাসওয়ার্ড মিলছে না। আবার চেষ্টা করুন।'],
+            ]);
+        }
+
+        if (!$user->password) {
+            throw ValidationException::withMessages([
+                'email' => ['এই অ্যাকাউন্টটি Google দিয়ে তৈরি হয়েছে। Google দিয়ে লগইন করুন।'],
+            ]);
+        }
+
+        if (!Hash::check($credentials['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['ইমেইল বা পাসওয়ার্ড মিলছে না। আবার চেষ্টা করুন।'],
             ]);
         }
 
         if ($user->status !== 'active') {
             return response()->json([
-                'message' => 'আপনার একাউন্ট সক্রিয় নয়।',
+                'message' => 'আপনার অ্যাকাউন্টটি বর্তমানে সক্রিয় নয়।',
             ], 403);
         }
 
         $this->ensureMemberRole($user);
         $this->ensureMemberProfile($user);
 
-        $token = $user->createToken(
-            $request->userAgent() ?: 'frontend'
-        )->plainTextToken;
+        $token = $this->issueToken($user, $request, 'frontend');
 
         return response()->json([
             'message' => 'লগইন সফল',
@@ -107,6 +115,9 @@ class AuthController extends Controller
         $data = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.min' => 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।',
+            'password.confirmed' => 'পাসওয়ার্ড দুটো একই হতে হবে।',
         ]);
 
         $user = $request->user();
@@ -143,6 +154,16 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();
 
         return response()->json(['message' => 'সব ডিভাইস থেকে লগআউট সফল']);
+    }
+
+    private function issueToken(User $user, Request $request, string $fallbackName): string
+    {
+        $deviceName = trim((string) $request->userAgent());
+        $deviceName = $deviceName !== '' ? $deviceName : $fallbackName;
+
+        $user->tokens()->where('name', $deviceName)->delete();
+
+        return $user->createToken($deviceName)->plainTextToken;
     }
 
     private function ensureMemberRole(User $user): void
