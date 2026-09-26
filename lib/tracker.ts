@@ -1,5 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://futurehope.totthobox.com";
 
+import { getStoredToken } from "@/lib/api";
+
 type TrackPayload = Record<string, unknown>;
 type DeviceNavigator = Navigator & { deviceMemory?: number; standalone?: boolean };
 type QueuedTrackingItem = { url: string; data: TrackingEventPayload; ts: number };
@@ -8,6 +10,7 @@ type TrackingEventPayload = {
   action: string;
   js_visitor_id: string;
   session_id: string;
+  user_id?: number | string | null;
   payload: TrackPayload;
 };
 
@@ -94,20 +97,24 @@ class VisitorTracker {
     const json = JSON.stringify(data);
     const isSameOrigin = typeof window !== "undefined" && new URL(url, window.location.href).origin === window.location.origin;
 
-    // The tracking API is normally on the separate Laravel domain.
-    // Do not use sendBeacon with application/json cross-origin: browsers can
-    // treat that payload as a CORS-preflighted request, and sendBeacon may
-    // report it as queued without giving us a usable fallback signal.
     if (isSameOrigin && navigator.sendBeacon) {
       const blob = new Blob([json], { type: "application/json" });
       if (navigator.sendBeacon(url, blob)) return;
     }
 
+    const token = getStoredToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     void fetch(url, {
       method: "POST",
       keepalive: true,
       credentials: "include",
-      headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+      headers,
       body: json,
     }).catch(() => this.queueOffline(url, data));
   }
@@ -120,9 +127,6 @@ class VisitorTracker {
     if (this.userId === userId) return;
     this.userId = userId;
 
-    // Keep the existing visitor/session IDs and tracking flow intact.
-    // When a user logs in, send one normal tracking event so the backend
-    // can associate the existing visitor record with users.id immediately.
     if (userId !== null && userId !== undefined) {
       this.trackEvent("system", "user_identified");
     }
@@ -134,6 +138,10 @@ class VisitorTracker {
       : payload;
   }
 
+  private get authenticatedUserId(): number | string | undefined {
+    return this.userId !== null && this.userId !== undefined ? this.userId : undefined;
+  }
+
   public startNavigation(): void {
     this.navigationStart = performance.now();
     this.isNavigating = true;
@@ -141,7 +149,11 @@ class VisitorTracker {
 
   public trackEvent(category: string, action: string, payload: TrackPayload = {}): void {
     this.scheduleSend(() => this.send(`${API_BASE}/api/tracking/event`, {
-      category, action, js_visitor_id: this.visitorId, session_id: this.sessionId,
+      category,
+      action,
+      js_visitor_id: this.visitorId,
+      session_id: this.sessionId,
+      user_id: this.authenticatedUserId,
       payload: this.withUserId({ ...payload, ...this.systemPayload }),
     }));
   }
@@ -172,14 +184,24 @@ class VisitorTracker {
       const trackedUrl = new URL(window.location.href);
       trackedUrl.searchParams.delete("token");
       this.send(`${API_BASE}/api/tracking/event`, {
-        category: "page", action: "view", js_visitor_id: this.visitorId, session_id: this.sessionId,
-        payload: {
-          path: currentPath, url: trackedUrl.toString(), referrer: document.referrer || null,
-          title: document.title || null, route_name: routeName || null,
-          utm_source: params.get("utm_source"), utm_medium: params.get("utm_medium"),
-          utm_campaign: params.get("utm_campaign"), is_pwa: this.detectPwa(),
-          load_time_ms: loadTimeMs, ...this.systemPayload, ...(this.userId !== null && this.userId !== undefined ? { user_id: this.userId } : {}),
-        },
+        category: "page",
+        action: "view",
+        js_visitor_id: this.visitorId,
+        session_id: this.sessionId,
+        user_id: this.authenticatedUserId,
+        payload: this.withUserId({
+          path: currentPath,
+          url: trackedUrl.toString(),
+          referrer: document.referrer || null,
+          title: document.title || null,
+          route_name: routeName || null,
+          utm_source: params.get("utm_source"),
+          utm_medium: params.get("utm_medium"),
+          utm_campaign: params.get("utm_campaign"),
+          is_pwa: this.detectPwa(),
+          load_time_ms: loadTimeMs,
+          ...this.systemPayload,
+        }),
       });
     });
   }
@@ -187,11 +209,14 @@ class VisitorTracker {
   public syncPwaStatus(isPwa: boolean): void {
     this.scheduleSend(() => {
       const payload = JSON.stringify({ is_pwa: isPwa, has_installed: isPwa });
+      const token = getStoredToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
       void fetch(`${API_BASE}/api/tracking/pwa`, {
         method: "POST",
         keepalive: true,
         credentials: "include",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers,
         body: payload,
       }).catch(() => undefined);
     });
@@ -207,12 +232,16 @@ class VisitorTracker {
       const activities = queue.map(item => ({
         type: item.data.category, key: item.data.action, value: item.data.payload,
         timestamp: item.ts, id: item.data.js_visitor_id,
+        user_id: item.data.user_id ?? item.data.payload.user_id ?? null,
       }));
+      const token = getStoredToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
       void fetch(`${API_BASE}/api/tracking/sync`, {
         method: "POST",
         keepalive: true,
         credentials: "include",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers,
         body: JSON.stringify({ activities }),
       }).catch(() => undefined);
       this.storage("tracking_queue", JSON.stringify([]));
@@ -248,7 +277,7 @@ let trackerInstance: VisitorTracker | null = null;
 export function getTracker(): VisitorTracker {
   if (typeof window === "undefined") {
     return { trackEvent: () => undefined, trackPageView: () => undefined, startNavigation: () => undefined,
-      syncPwaStatus: () => undefined, flushOfflineQueue: () => undefined, init: () => undefined } as unknown as VisitorTracker;
+      syncPwaStatus: () => undefined, flushOfflineQueue: () => undefined, init: () => undefined, setUserId: () => undefined } as unknown as VisitorTracker;
   }
   trackerInstance ??= new VisitorTracker();
   return trackerInstance;
