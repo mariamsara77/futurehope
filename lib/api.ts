@@ -363,6 +363,25 @@ export async function completeGoogleLogin(code: string) {
   return { token, user };
 }
 
+export async function sendPasswordResetLink(email: string) {
+  return request<ApiResponse>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, email: string, password: string, passwordConfirmation: string) {
+  return request<ApiResponse>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({
+      token,
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
+    }),
+  });
+}
+
 export async function register(name: string, email: string, password: string, passwordConfirmation: string) {
   const payload = await request<ApiResponse>("/auth/register", {
     method: "POST",
