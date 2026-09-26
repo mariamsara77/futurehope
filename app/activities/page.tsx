@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ActivitiesPage() {
   const result = await getWorks({ perPage: 12 });
+  const publishedWorks = result.works.filter((work) => work.is_published);
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="max-w-3xl">
@@ -18,9 +19,9 @@ export default async function ActivitiesPage() {
         <p className="mt-5 text-lg leading-8 text-zinc-500">প্রশাসনিক প্যানেল থেকে প্রকাশিত কাজ ও উদ্যোগগুলো এখানে স্বয়ংক্রিয়ভাবে প্রদর্শিত হয়।</p>
       </div>
 
-      {result.works.length > 0 ? (
+      {publishedWorks.length > 0 ? (
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {result.works.map(work => <WorkCard key={work.id} work={work} />)}
+          {publishedWorks.map(work => <WorkCard key={work.id} work={work} />)}
         </div>
       ) : (
         <div className="mt-12 rounded-3xl border border-zinc-200 bg-white px-6 py-16 text-center shadow-sm">
