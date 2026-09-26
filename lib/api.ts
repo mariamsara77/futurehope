@@ -161,7 +161,7 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     const timeoutId = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
 
     try {
-      response = await fetch(`${API_BASE_URL}/api${path}`, {
+      const response = await fetch(`${API_BASE_URL}/api${path}`, {
         ...init,
         headers,
         credentials: "include",
