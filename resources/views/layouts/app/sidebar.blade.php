@@ -117,13 +117,15 @@
         <flux:spacer />
 
         <flux:dropdown position="top" align="end">
-        <flux:profile :avatar="auth()->user()->avatar_url" :name="auth()->user()->name" :initials="auth()->user()->initials()" icon-trailing="chevron-down" />
+            <flux:profile :avatar="auth()->user()->avatar_url" :name="auth()->user()->name"
+                :initials="auth()->user()->initials()" icon-trailing="chevron-down" />
 
             <flux:menu>
                 <flux:menu.radio.group>
                     <div class="p-0 text-sm font-normal">
                         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                            <flux:avatar src="{{ auth()->user()->avatar_url }}" :name="auth()->user()->name" :initials="auth()->user()->initials()" />
+                            <flux:avatar src="{{ auth()->user()->avatar_url }}" :name="auth()->user()->name"
+                                :initials="auth()->user()->initials()" />
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
@@ -164,7 +166,6 @@
     </flux:toast.group>
     @endpersist
 
-    @livewireScripts
     @fluxScripts
 </body>
 
