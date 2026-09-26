@@ -120,9 +120,11 @@ class AuthController extends Controller
         $user->forceFill(['password' => $data['password']])->save();
 
         $currentTokenId = $user->currentAccessToken()?->id;
-        $user->tokens()
-            ->when($currentTokenId, fn ($query) => $query->whereKeyNot($currentTokenId))
-            ->delete();
+        if ($currentTokenId) {
+            $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+        } else {
+            $user->tokens()->delete();
+        }
 
         return response()->json([
             'message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে। অন্য ডিভাইসগুলোর পুরোনো সেশন বন্ধ করা হয়েছে।',
