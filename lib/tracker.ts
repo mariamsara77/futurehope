@@ -15,6 +15,7 @@ class VisitorTracker {
   private readonly visitorId: string;
   private readonly sessionId: string;
   private readonly systemPayload: TrackPayload;
+  private userId: number | string | null = null;
   private initialized = false;
   private lastPageView = "";
   private lastPageViewTime = 0;
@@ -115,6 +116,16 @@ class VisitorTracker {
     if (typeof window !== "undefined") window.setTimeout(fn, 100);
   }
 
+  public setUserId(userId: number | string | null): void {
+    this.userId = userId;
+  }
+
+  private withUserId(payload: TrackPayload): TrackPayload {
+    return this.userId !== null && this.userId !== undefined
+      ? { ...payload, user_id: this.userId }
+      : payload;
+  }
+
   public startNavigation(): void {
     this.navigationStart = performance.now();
     this.isNavigating = true;
@@ -123,7 +134,7 @@ class VisitorTracker {
   public trackEvent(category: string, action: string, payload: TrackPayload = {}): void {
     this.scheduleSend(() => this.send(`${API_BASE}/api/tracking/event`, {
       category, action, js_visitor_id: this.visitorId, session_id: this.sessionId,
-      payload: { ...payload, ...this.systemPayload },
+      payload: this.withUserId({ ...payload, ...this.systemPayload }),
     }));
   }
 
@@ -159,7 +170,7 @@ class VisitorTracker {
           title: document.title || null, route_name: routeName || null,
           utm_source: params.get("utm_source"), utm_medium: params.get("utm_medium"),
           utm_campaign: params.get("utm_campaign"), is_pwa: this.detectPwa(),
-          load_time_ms: loadTimeMs, ...this.systemPayload,
+          load_time_ms: loadTimeMs, ...this.systemPayload, ...(this.userId !== null && this.userId !== undefined ? { user_id: this.userId } : {}),
         },
       });
     });
