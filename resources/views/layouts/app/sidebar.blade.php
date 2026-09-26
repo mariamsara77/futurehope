@@ -3,6 +3,7 @@
 
 <head>
     @include('partials.head')
+    @livewireStyles
 </head>
 
 <body class="min-h-screen bg-white dark:bg-zinc-800">
@@ -13,9 +14,7 @@
             <flux:sidebar.collapse class="lg:hidden" />
         </flux:sidebar.header>
 
-
         <flux:sidebar.nav>
-            <!-- General User Group -->
             <flux:sidebar.group :heading="__('Platform')" class="grid">
                 <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate>
@@ -23,7 +22,6 @@
                 </flux:sidebar.item>
 
                 @can('biodata-manage')
-                <!-- My Biodata -->
                 <flux:sidebar.item icon="user-circle" :href="route('dashboard.biodata')"
                     :current="request()->routeIs('dashboard.biodata')" wire:navigate>
                     {{ __('My Biodata') }}
@@ -31,7 +29,6 @@
                 @endcan
             </flux:sidebar.group>
 
-            <!-- Admin Management Group -->
             @if(auth()->user()->can('user-manage') || auth()->user()->can('designation-manage') ||
             auth()->user()->can('role-manage') || auth()->user()->can('permission-manage') ||
             auth()->user()->can('work-manage') || auth()->user()->can('contact-manage'))
@@ -110,7 +107,6 @@
         <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
     </flux:sidebar>
 
-    <!-- Mobile User Menu -->
     <flux:header class="lg:hidden">
         <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
@@ -166,6 +162,7 @@
     </flux:toast.group>
     @endpersist
 
+    @livewireScripts
     @fluxScripts
 </body>
 
