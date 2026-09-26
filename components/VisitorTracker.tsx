@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { getTracker, trackPageView, startNavigation } from "@/lib/tracker";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function VisitorTracker() {
   const pathname = usePathname();
