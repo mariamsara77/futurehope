@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getWork } from "@/lib/api";
+import { getWork, ApiError, type Work } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ActivityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const work = await getWork(id);
+  let work: Work | null = null;
+  let unavailable = false;
+
+  try {
+    work = await getWork(id);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0) unavailable = true;
+    else throw error;
+  }
+
+  if (!work) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:px-8">
+        <Link href="/activities" className="text-sm font-semibold text-emerald-700">← সব কার্যক্রম</Link>
+        <h1 className="mt-6 text-3xl font-bold">{unavailable ? "তথ্য এখন পাওয়া যাচ্ছে না" : "কার্যক্রমটি পাওয়া যায়নি"}</h1>
+        <p className="mt-3 leading-7 text-zinc-500">
+          {unavailable ? "Backend service সাময়িকভাবে অনুপলব্ধ। পরে আবার চেষ্টা করুন।" : "এই কার্যক্রমটি আর প্রকাশিত নেই বা পাওয়া যায়নি।"}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
