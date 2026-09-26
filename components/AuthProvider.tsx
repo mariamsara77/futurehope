@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { API_BASE_URL, clearStoredToken, getMe, getStoredToken, login as loginApi, logout as logoutApi } from "@/lib/api";
+import { API_BASE_URL, ApiError, clearStoredToken, getMe, getStoredToken, login as loginApi, logout as logoutApi } from "@/lib/api";
 import type { AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
@@ -29,9 +29,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
     try {
       setUser(await getMe());
-    } catch {
-      clearStoredToken();
-      setUser(null);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearStoredToken();
+        setUser(null);
+      }
+      // A temporary API/network failure must not log the user out or take down the site.
     }
   }, []);
 
@@ -52,10 +55,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, [refresh]);
 
   const googleLogin = useCallback(() => {
-    // Use the current tab so browser popup blockers cannot prevent OAuth.
     window.location.assign(API_BASE_URL + "/api/auth/google/redirect");
     return new Promise<AuthUser>(() => undefined);
   }, []);
+
   const logout = useCallback(async (all = false) => {
     await logoutApi(all);
     setUser(null);
