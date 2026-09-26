@@ -82,7 +82,7 @@ export default function PWARegister() {
         <div className="fixed inset-x-0 bottom-3 z-[65] flex justify-center px-3 md:hidden">
           <div className="flex w-fit max-w-full items-center gap-2 rounded-full border border-zinc-200/80 bg-white/95 py-1.5 pl-1.5 pr-1.5 shadow-xl shadow-zinc-900/10 backdrop-blur-md">
             <img
-              src="/android-chrome-192x192.png"
+              src="/android-chrome-192x192-safe.svg"
               alt=""
               className="h-8 w-8 shrink-0 rounded-full"
             />
