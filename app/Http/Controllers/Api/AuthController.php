@@ -65,7 +65,7 @@ class AuthController extends Controller
 
         if (!$user) {
             throw ValidationException::withMessages([
-                'email' => ['ইমেইল বা পাসওয়ার্ড মিলছে না। আবার চেষ্টা করুন।'],
+                'email' => ['এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।'],
             ]);
         }
 
@@ -77,7 +77,7 @@ class AuthController extends Controller
 
         if (!Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['ইমেইল বা পাসওয়ার্ড মিলছে না। আবার চেষ্টা করুন।'],
+                'password' => ['পাসওয়ার্ড সঠিক নয়।'],
             ]);
         }
 
