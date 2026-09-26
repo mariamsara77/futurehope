@@ -31,6 +31,12 @@ Route::get('/health', fn () => response()->json([
 */
 
 Route::get('/works', [WorkController::class, 'index']);
+
+// This static route must be registered before /works/{work}, otherwise Laravel
+// treats "pending" as a work ID and never reaches the member voting endpoint.
+Route::get('/works/pending', [WorkController::class, 'pending'])
+    ->middleware('auth:sanctum');
+
 Route::get('/works/{work}', [WorkController::class, 'show']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
@@ -142,10 +148,6 @@ Route::middleware('auth:sanctum')->group(function () {
     | Work Voting
     |--------------------------------------------------------------------------
     */
-
-    // Keep the static /works/pending route before /works/{work} so Laravel
-    // does not interpret "pending" as a work ID.
-    Route::get('/works/pending', [WorkController::class, 'pending']);
 
     Route::post('/works/{work}/vote', [WorkController::class, 'vote']);
 
