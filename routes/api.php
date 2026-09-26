@@ -143,9 +143,8 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    // Voting access is enforced by WorkController::isApprovedMember().
-    // Keeping these endpoints behind auth:sanctum lets approved members and admins
-    // use voting reliably even when Spatie's permission cache is stale.
+    // Keep the static /works/pending route before /works/{work} so Laravel
+    // does not interpret "pending" as a work ID.
     Route::get('/works/pending', [WorkController::class, 'pending']);
 
     Route::post('/works/{work}/vote', [WorkController::class, 'vote']);
