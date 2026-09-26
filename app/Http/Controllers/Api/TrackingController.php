@@ -104,7 +104,7 @@ class TrackingController extends Controller
                 ?? $this->trackingService->getOrCreateVisitorFromData([
                     'ip'         => $ip,
                     'user_agent' => (string) $request->userAgent(),
-                    'user_id'    => Auth::id(),
+                    'user_id'    => $authenticatedUserId,
                     'is_pwa'     => $this->trackingService->resolveIsPwa($request),
                 ]);
 
