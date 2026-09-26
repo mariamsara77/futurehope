@@ -16,31 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        /*
-        |--------------------------------------------------------------------------
-        | Proxy / Web middleware
-        |--------------------------------------------------------------------------
-        |
-        | Keep the existing proxy behavior and web middleware configuration.
-        |
-        */
         $middleware->trustProxies(at: '*');
+        $middleware->statefulApi();
 
         $middleware->web(append: [
             // Add web-only application middleware here when required.
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Spatie Laravel Permission aliases
-        |--------------------------------------------------------------------------
-        |
-        | These aliases are used by routes such as:
-        | permission:work-vote
-        | permission:biodata-manage
-        | role:admin
-        |
-        */
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
