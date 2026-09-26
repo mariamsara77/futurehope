@@ -217,7 +217,9 @@ export async function getWorks(params: { page?: number; perPage?: number; search
   try {
     return await request<PaginatedWorks>(`/works${query.toString() ? `?${query.toString()}` : ""}`, { method: "GET" }, Boolean(getStoredToken()));
   } catch (error) {
-    if (error instanceof ApiError && error.status === 0) return emptyWorks();
+    // Public work listings must never make the page fail when the API is unavailable
+    // or temporarily returns an upstream/server error.
+    if (error instanceof ApiError) return emptyWorks();
     throw error;
   }
 }
