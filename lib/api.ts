@@ -229,7 +229,7 @@ export async function getPendingWorks() {
     const payload = await request<{ works: Work[] }>("/works/pending", { method: "GET" }, true);
     return payload.works;
   } catch (error) {
-    if (error instanceof ApiError && error.status === 0) return [];
+    if (error instanceof ApiError) return [];
     throw error;
   }
 }
@@ -266,7 +266,7 @@ export async function getMembers() {
     const payload = await request<{ members: Member[] }>("/members");
     return payload.members;
   } catch (error) {
-    if (error instanceof ApiError && error.status === 0) return [];
+    if (error instanceof ApiError) return [];
     throw error;
   }
 }
@@ -276,7 +276,7 @@ export async function getWorkCategories() {
     const payload = await request<{ categories: WorkCategory[] }>("/categories");
     return payload.categories;
   } catch (error) {
-    if (error instanceof ApiError && error.status === 0) return [];
+    if (error instanceof ApiError) return [];
     throw error;
   }
 }
