@@ -173,7 +173,7 @@ class GoogleAuthController extends Controller
 
         if (!$userId) {
             return response()->json([
-                'message' => 'Google login code invalid or expired. আবার Google দিয়ে লগইন করুন।',
+                'message' => 'Google লগইনের সময় শেষ হয়েছে। আবার Google দিয়ে লগইন করুন।',
             ], 422);
         }
 
@@ -185,12 +185,12 @@ class GoogleAuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken(
-            $request->userAgent() ?: 'google-frontend'
-        )->plainTextToken;
+        $deviceName = trim((string) $request->userAgent()) ?: 'google-frontend';
+        $user->tokens()->where('name', $deviceName)->delete();
+        $token = $user->createToken($deviceName)->plainTextToken;
 
         return response()->json([
-            'message' => 'Google login সফল',
+            'message' => 'Google লগইন সফল',
             'user' => $this->formatUser($user),
             'token' => $token,
             'token_type' => 'Bearer',
