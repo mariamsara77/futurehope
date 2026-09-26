@@ -135,6 +135,13 @@ function errorMessage(payload: ApiResponse, fallback: string) {
   return fallback;
 }
 
+const API_REQUEST_TIMEOUT_MS = 5000;
+const API_GET_RETRIES = 1;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function request<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
@@ -145,35 +152,54 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
   const token = getStoredToken();
   if (authenticated && token) headers.set("Authorization", `Bearer ${token}`);
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/api${path}`, {
-      ...init,
-      headers,
-      credentials: "include",
-      cache: "no-store",
-    });
-  } catch {
-    throw new ApiError("সার্ভারের সাথে সংযোগ করা যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।", 0);
+  const method = (init.method || "GET").toUpperCase();
+  const maxAttempts = method === "GET" ? API_GET_RETRIES + 1 : 1;
+  let lastNetworkError: unknown = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+
+    try {
+      response = await fetch(`${API_BASE_URL}/api${path}`, {
+        ...init,
+        headers,
+        credentials: "include",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
+      const text = await response.text();
+      let payload: ApiResponse = {};
+      try {
+        payload = text ? JSON.parse(text) : {};
+      } catch {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        throw new ApiError(
+          errorMessage(payload, response.status === 401 ? "আপনার লগইন সেশন বৈধ নয়।" : "অনুরোধটি সম্পন্ন করা যায়নি।"),
+          response.status,
+          payload
+        );
+      }
+
+      return payload as T;
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      lastNetworkError = error;
+      if (attempt + 1 < maxAttempts) await sleep(250);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
-  const text = await response.text();
-  let payload: ApiResponse = {};
-  try {
-    payload = text ? JSON.parse(text) : {};
-  } catch {
-    payload = {};
-  }
-
-  if (!response.ok) {
-    throw new ApiError(
-      errorMessage(payload, response.status === 401 ? "আপনার লগইন সেশন বৈধ নয়।" : "অনুরোধটি সম্পন্ন করা যায়নি।"),
-      response.status,
-      payload
-    );
-  }
-
-  return payload as T;
+  throw new ApiError("সার্ভারের সাথে সংযোগ করা যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।", 0, {
+    message: lastNetworkError instanceof Error && lastNetworkError.name === "AbortError"
+      ? "সার্ভার সাড়া দিতে সময় নিচ্ছে।"
+      : undefined,
+  });
 }
 
 const emptyWorks = (): PaginatedWorks => ({
