@@ -2,11 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
-
 Route::middleware(['auth'])->group(function () {
     // === Dashboard & Analytics Routes ===
-    Route::livewire('/dashboard', 'pages::admin.dashboard.dashboard')->name('dashboard.root');
+    Route::livewire('/', 'pages::admin.dashboard.dashboard')->name('home');
     Route::livewire('/{current_team?}/dashboard', 'pages::admin.dashboard.dashboard')->name('dashboard')->middleware(\App\Http\Middleware\EnsureTeamMembership::class);
     Route::livewire('/dashboard/session-manage', 'pages::admin.dashboard.session-manage')->name('dashboard.session');
     

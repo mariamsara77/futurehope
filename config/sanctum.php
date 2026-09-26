@@ -7,22 +7,59 @@ use Laravel\Sanctum\Sanctum;
 
 return [
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1,futurehope.totthobox.com',
-        Sanctum::currentApplicationUrlWithPort(),
-    ))),
+    /*
+    |--------------------------------------------------------------------------
+    | Stateful Domains
+    |--------------------------------------------------------------------------
+    */
 
-    'guard' => ['web'],
+    'stateful' => explode(',', env(
+        'SANCTUM_STATEFUL_DOMAINS',
+        sprintf(
+            '%s%s',
+            'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1,futurehope.totthobox.com,future-hope-and-humanity-foundation.vercel.app',
+            Sanctum::currentApplicationUrlWithPort(),
+        )
+    )),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sanctum Guards
+    |--------------------------------------------------------------------------
+    */
+
+    'guard' => [
+        'web',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Expiration
+    |--------------------------------------------------------------------------
+    */
 
     'expiration' => null,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Token Prefix
+    |--------------------------------------------------------------------------
+    */
+
     'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Middleware
+    |--------------------------------------------------------------------------
+    */
+
     'middleware' => [
+
         'authenticate_session' => AuthenticateSession::class,
+
         'encrypt_cookies' => EncryptCookies::class,
+
         'validate_csrf_token' => ValidateCsrfToken::class,
     ],
-
 ];

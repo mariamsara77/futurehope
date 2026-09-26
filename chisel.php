@@ -39,29 +39,6 @@ function chiselRun(array $command, string $label): void
     }
 }
 
-function chiselSkipsNode(): bool
-{
-    return filter_var(
-        $_ENV['LARAVEL_INSTALLER_NO_NODE']
-            ?? $_SERVER['LARAVEL_INSTALLER_NO_NODE']
-            ?? getenv('LARAVEL_INSTALLER_NO_NODE'),
-        FILTER_VALIDATE_BOOL,
-    );
-}
-
-function chiselRemoveNpmPackages(Chisel $c, string ...$packages): void
-{
-    if (! chiselSkipsNode()) {
-        $c->npm()->remove(...$packages);
-
-        return;
-    }
-
-    foreach ($packages as $package) {
-        $c->file('package.json')->removeLinesContaining('"'.$package.'":');
-    }
-}
-
 /**
  * Variant-specific filenames are supplied by the sibling chisel-paths.php.
  * The Single-File Component variant ships the default paths file; the
@@ -90,10 +67,9 @@ return Chisel::script(__DIR__)
                 'email-verification' => 'Email verification',
                 'registration' => 'Registration',
                 '2fa' => 'Two-factor authentication',
-                'passkeys' => 'Passkeys',
                 'password-confirmation' => 'Password confirmation',
             ],
-            default: ['email-verification', 'registration', '2fa', 'passkeys', 'password-confirmation'],
+            default: ['email-verification', 'registration', '2fa', 'password-confirmation'],
             hint: 'Use space to select, enter to confirm.',
         ),
     ])
@@ -188,52 +164,6 @@ return Chisel::script(__DIR__)
                 'database/migrations/2025_08_14_170933_add_two_factor_columns_to_users_table.php',
                 'tests/Feature/Auth/TwoFactorChallengeTest.php',
             ])->delete();
-        },
-    )
-    ->selected(
-        'auth_features',
-        'passkeys',
-        then: function (Chisel $c) use ($paths) {
-            $c->files(
-                'config/fortify.php',
-                'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
-                'tests/Feature/Auth/AuthenticationTest.php',
-                'tests/Feature/Settings/SecurityTest.php',
-                'vite.config.js',
-                $paths['login'],
-                $paths['confirm_password'],
-                ...$paths['security_files'],
-            )->removeSectionMarkers('passkeys');
-        },
-        else: function (Chisel $c) use ($paths) {
-            $c->php('app/Models/User.php')
-                ->removeImport('Laravel\Fortify\PasskeyAuthenticatable')
-                ->removeImport('Laravel\Fortify\Contracts\PasskeyUser')
-                ->removeTrait('PasskeyAuthenticatable')
-                ->removeInterface('PasskeyUser');
-
-            $c->files(
-                'config/fortify.php',
-                'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
-                'tests/Feature/Auth/AuthenticationTest.php',
-                'tests/Feature/Settings/SecurityTest.php',
-                'vite.config.js',
-                $paths['login'],
-                $paths['confirm_password'],
-                ...$paths['security_files'],
-            )->removeSection('passkeys');
-
-            chiselRemoveNpmPackages($c, '@laravel/passkeys');
-
-            $c->files(
-                'resources/views/components/passkey-verify.blade.php',
-                'resources/views/components/passkey-registration.blade.php',
-                'resources/js/passkeys.js',
-                'app/Http/Responses/PasskeyLoginResponse.php',
-                'database/migrations/2024_01_01_000000_create_passkeys_table.php',
-            )->delete();
         },
     )
     ->selected(

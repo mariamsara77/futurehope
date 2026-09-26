@@ -1,0 +1,56 @@
+[1mdiff --git a/vite.config.js b/vite.config.js[m
+[1mindex d45fb65..8743e9b 100755[m
+[1m--- a/vite.config.js[m
+[1m+++ b/vite.config.js[m
+[36m@@ -1,36 +1,24 @@[m
+[31m-import tailwindcss from '@tailwindcss/vite';[m
+[32m+[m[32mimport { defineConfig } from 'vite';[m
+ import laravel from 'laravel-vite-plugin';[m
+[31m-import { bunny } from 'laravel-vite-plugin/fonts';[m
+[31m-import { defineConfig, lazyPlugins } from 'vite-plus';[m
+[32m+[m[32mimport tailwindcss from "@tailwindcss/vite";[m
+ [m
+ export default defineConfig({[m
+[31m-    plugins: lazyPlugins(() => [[m
+[32m+[m[32m    plugins: [[m
+         laravel({[m
+[31m-            input: [[m
+[31m-                'resources/css/app.css',[m
+[31m-                'resources/js/app.js',[m
+[31m-                'resources/js/passkeys.js',[m
+[31m-            ],[m
+[32m+[m[32m            input: ['resources/css/app.css', 'resources/js/app.js'],[m
+             refresh: true,[m
+[31m-            fonts: [[m
+[31m-                bunny('Instrument Sans', {[m
+[31m-                    weights: [400, 500, 600],[m
+[31m-                }),[m
+[31m-            ],[m
+         }),[m
+         tailwindcss(),[m
+[31m-    ]),[m
+[32m+[m[32m    ],[m
+     server: {[m
+[31m-        cors: true,[m
+[31m-        watch: {[m
+[31m-            ignored: [[m
+[31m-                '**/.agents/**',[m
+[31m-                '**/.claude/**',[m
+[31m-                '**/.cursor/**',[m
+[31m-                '**/.junie/**',[m
+[31m-                '**/storage/framework/views/**',[m
+[31m-                '**/vendor/**',[m
+[31m-            ],[m
+[32m+[m[32m        host: '0.0.0.0', // আপনার লোকাল নেটওয়ার্ক বা সার্ভারে বাইরের কানেকশন রিসিভ করার জন্য[m
+[32m+[m[32m        port: 5173,[m
+[32m+[m[32m        strictPort: true,[m
+[32m+[m[32m        cors: true, // সিকিউর ডোমেইন থেকে ফন্ট ও অ্যাসেট লোড ব্লক (CORS Error) হওয়া বন্ধ করতে[m
+[32m+[m[32m        hmr: {[m
+[32m+[m[32m            host: 'futurehope.totthobox.com', // আপনার মেইন ডোমেইন[m
+[32m+[m[32m            protocol: 'wss', // HTTPS ডোমেইনের জন্য অবশ্যই সিকিউর ওয়েবসোকেট (wss) লাগবে[m
+[32m+[m[32m            clientPort: 443, // HTTPS এর ডিফল্ট পোর্ট ৪৪৩[m
+         },[m
+     },[m
+[31m-});[m
+[32m+[m[32m});[m
+\ No newline at end of file[m

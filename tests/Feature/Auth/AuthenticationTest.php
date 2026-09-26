@@ -4,9 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Laravel\Fortify\Features;
-use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -34,24 +32,6 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('dashboard', ['current_team' => $user->personalTeam()->slug], absolute: false));
 
         $this->assertAuthenticated();
-    }
-
-    public function test_passkey_login_response_redirects_to_the_current_team_dashboard(): void
-    {
-        $user = User::factory()->create();
-
-        $request = Request::create(route('login', absolute: false), 'GET', server: [
-            'HTTP_ACCEPT' => 'application/json',
-        ]);
-        $request->setLaravelSession($this->app['session.store']);
-        $request->setUserResolver(fn () => $user);
-
-        $jsonResponse = app(PasskeyLoginResponse::class)->toResponse($request);
-
-        $this->assertSame(
-            route('dashboard', ['current_team' => $user->personalTeam()->slug]),
-            $jsonResponse->getData()->redirect,
-        );
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
