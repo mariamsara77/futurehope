@@ -2,18 +2,18 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ApiError, register as registerApi } from "@/lib/api";
+import { ApiError, register as registerApi, sendPasswordResetLink } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AuthDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { login, googleLogin } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const [resetSent, setResetSent] = useState(false);
 
   const closeAndReset = useCallback(() => {
     setMode("login");
@@ -39,7 +39,7 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
     event.preventDefault();
     setError("");
 
-    if (mode === "register" && password !== confirmation) {
+    if (mode === "forgot") {\n      setBusy(true);\n      try {\n        await sendPasswordResetLink(email.trim());\n        setResetSent(true);\n      } catch (err) {\n        setError(err instanceof ApiError ? err.message : "অনুরোধটি সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।");\n      } finally {\n        setBusy(false);\n      }\n      return;\n    }\n\n    if (mode === "register" && password !== confirmation) {
       setError("পাসওয়ার্ড এবং নিশ্চিত পাসওয়ার্ড একই হতে হবে।");
       return;
     }
@@ -92,7 +92,7 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
           <p className="mt-1 text-sm text-zinc-500">{mode === "login" ? "আপনার Future Hope অ্যাকাউন্টে প্রবেশ করুন।" : "কয়েকটি তথ্য দিয়ে আপনার Future Hope অ্যাকাউন্ট তৈরি করুন।"}</p>
         </div>
 
-        <button type="button" disabled={busy} onClick={() => void googleSubmit()} className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3.5 font-semibold text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60">
+        {mode !== "forgot" && <>        <button type="button" disabled={busy} onClick={() => void googleSubmit()} className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3.5 font-semibold text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60">
           <span className="text-lg font-bold">G</span>
           Google দিয়ে {mode === "login" ? "লগইন" : "সাইন আপ"}
         </button>
@@ -103,7 +103,7 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
           <span className="h-px flex-1 bg-zinc-200" />
         </div>
 
-        <form onSubmit={submit} className="space-y-4">
+</>}         <form onSubmit={submit} className="space-y-4">\n          {mode === "forgot" && resetSent && (\n            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">যদি এই ইমেইল দিয়ে একটি অ্যাকাউন্ট থাকে, তাহলে পাসওয়ার্ড রিসেট করার লিংক আপনার ইমেইলে পাঠানো হয়েছে।</div>\n          )}
           {mode === "register" && (
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-zinc-700">নাম</span>
@@ -124,9 +124,9 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
               <input value={confirmation} onChange={(e) => setConfirmation(e.target.value)} type="password" autoComplete="new-password" required minLength={8} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder="পাসওয়ার্ড আবার লিখুন" />
             </label>
           )}
-          {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+          {mode === "login" && (\n            <button type="button" disabled={busy} onClick={() => { setMode("forgot"); setError(""); setResetSent(false); }} className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-60">পাসওয়ার্ড ভুলে গেছেন?</button>\n          )}\n          {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
           <button disabled={busy} className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
-            {busy ? (mode === "login" ? "লগইন হচ্ছে..." : "অ্যাকাউন্ট তৈরি হচ্ছে...") : mode === "login" ? "লগইন" : "রেজিস্টার"}
+            {busy ? (mode === "login" ? "লগইন হচ্ছে..." : mode === "forgot" ? "লিংক পাঠানো হচ্ছে..." : "অ্যাকাউন্ট তৈরি হচ্ছে...") : mode === "login" ? "লগইন" : mode === "forgot" ? "রিসেট লিংক পাঠান" : "রেজিস্টার"}
           </button>
         </form>
 
