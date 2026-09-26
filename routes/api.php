@@ -30,18 +30,18 @@ Route::post('/tracking/event', [TrackingController::class, 'trackEvent'])->middl
 Route::post('/tracking/pwa', [TrackingController::class, 'syncPwaStatus'])->middleware('throttle:30,1');
 Route::post('/tracking/sync', [ActivitySyncController::class, 'sync'])->middleware('throttle:30,1');
 
-// Visitors and logged-in users can submit suggestions.
 Route::post('/works', [WorkController::class, 'store'])->middleware('throttle:10,1');
 
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
     Route::get('/google/redirect', [GoogleAuthController::class, 'redirect'])->middleware(['web', 'throttle:10,1']);
     Route::get('/google/callback', [GoogleAuthController::class, 'callback'])->middleware(['web', 'throttle:10,1']);
     Route::post('/google/exchange', [GoogleAuthController::class, 'exchange'])->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     });
@@ -56,9 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/my-works', [WorkController::class, 'myWorks']);
-
-    // Authenticated users may open published works; unpublished works are
-    // visible only to their owner or members with the work-vote permission.
     Route::get('/works/{work}/view', [WorkController::class, 'view']);
 
     Route::middleware('permission:work-vote')->group(function () {
@@ -72,8 +69,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/profiles/{profile}/approve', [AdminProfileController::class, 'approve']);
         Route::post('/profiles/{profile}/reject', [AdminProfileController::class, 'reject']);
     });
-
 });
 
-// Public single-work route returns published works and unpublished works that are still in voting.
 Route::get('/works/{work}', [WorkController::class, 'show']);
