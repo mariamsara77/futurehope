@@ -304,7 +304,7 @@ export async function getCategories() {
     const payload = await request<{ categories: Category[] }>("/categories");
     return payload.categories;
   } catch (error) {
-    if (error instanceof ApiError && error.status === 0) return [];
+    if (error instanceof ApiError) return [];
     throw error;
   }
 }
