@@ -95,11 +95,37 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-
         $this->ensureMemberRole($user);
 
         return response()->json([
             'user' => $this->formatUser($user),
+        ]);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (!$user || !$user->password || !Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['বর্তমান পাসওয়ার্ডটি সঠিক নয়।'],
+            ]);
+        }
+
+        $user->forceFill(['password' => $data['password']])->save();
+
+        $currentTokenId = $user->currentAccessToken()?->id;
+        $user->tokens()
+            ->when($currentTokenId, fn ($query) => $query->whereKeyNot($currentTokenId))
+            ->delete();
+
+        return response()->json([
+            'message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে। অন্য ডিভাইসগুলোর পুরোনো সেশন বন্ধ করা হয়েছে।',
         ]);
     }
 
