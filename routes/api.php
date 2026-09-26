@@ -143,14 +143,14 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('permission:work-vote')->group(function () {
+    // Voting access is enforced by WorkController::isApprovedMember().
+    // Keeping these endpoints behind auth:sanctum lets approved members and admins
+    // use voting reliably even when Spatie's permission cache is stale.
+    Route::get('/works/pending', [WorkController::class, 'pending']);
 
-        Route::get('/works/pending', [WorkController::class, 'pending']);
+    Route::post('/works/{work}/vote', [WorkController::class, 'vote']);
 
-        Route::post('/works/{work}/vote', [WorkController::class, 'vote']);
-
-        Route::delete('/works/{work}/vote', [WorkController::class, 'undoVote']);
-    });
+    Route::delete('/works/{work}/vote', [WorkController::class, 'undoVote']);
 
     /*
     |--------------------------------------------------------------------------
