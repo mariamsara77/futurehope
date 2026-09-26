@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -21,9 +23,14 @@ use Spatie\Permission\Traits\HasRoles;
     'name', 'email', 'password', 'google_id', 'avatar', 'status', 'current_team_id'
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements HasMedia, CanResetPassword
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles, InteractsWithMedia, TwoFactorAuthenticatable;
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
 
     use HasTeams {
         HasTeams::teams as teamsRelation;
