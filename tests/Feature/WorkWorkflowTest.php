@@ -97,6 +97,87 @@ class WorkWorkflowTest extends TestCase
             ->assertJsonPath('work.has_voted', false);
     }
 
+    public function test_public_work_listing_contains_only_published_works(): void
+    {
+        [$memberRole] = $this->prepareVotingRole();
+
+        $member = User::factory()->create(['status' => 'active']);
+        $member->assignRole($memberRole);
+        $member->profile()->create(['status' => 'active']);
+
+        $published = Work::create([
+            'user_id' => $member->id,
+            'title' => 'Published work',
+            'description' => 'Public activity test.',
+            'status' => 'approved',
+            'is_published' => true,
+            'votes_count' => 10,
+            'required_votes' => 10,
+        ]);
+
+        $pending = Work::create([
+            'user_id' => $member->id,
+            'title' => 'Pending work',
+            'description' => 'Must remain in voting only.',
+            'status' => 'voting',
+            'is_published' => false,
+            'votes_count' => 2,
+            'required_votes' => 10,
+        ]);
+
+        $response = $this->getJson('/api/works');
+
+        $response->assertOk()
+            ->assertJsonFragment(['id' => $published->id])
+            ->assertJsonMissing(['id' => $pending->id]);
+    }
+
+    public function test_member_can_cancel_vote_and_pending_work_returns_to_voting_state(): void
+    {
+        [$memberRole] = $this->prepareVotingRole();
+
+        $owner = User::factory()->create(['status' => 'active']);
+        $owner->assignRole($memberRole);
+        $owner->profile()->create(['status' => 'active']);
+
+        $voter = User::factory()->create(['status' => 'active']);
+        $voter->assignRole($memberRole);
+        $voter->profile()->create(['status' => 'active']);
+
+        $work = Work::create([
+            'user_id' => $owner->id,
+            'title' => 'Undo vote work',
+            'description' => 'Vote cancellation test.',
+            'status' => 'voting',
+            'is_published' => false,
+            'votes_count' => 0,
+            'required_votes' => 2,
+        ]);
+
+        $this->actingAs($voter, 'sanctum')
+            ->postJson('/api/works/' . $work->id . '/vote')
+            ->assertOk()
+            ->assertJsonPath('has_voted', true)
+            ->assertJsonPath('votes_count', 1);
+
+        $this->actingAs($voter, 'sanctum')
+            ->deleteJson('/api/works/' . $work->id . '/vote')
+            ->assertOk()
+            ->assertJsonPath('has_voted', false)
+            ->assertJsonPath('votes_count', 0)
+            ->assertJsonPath('is_published', false);
+
+        $work->refresh();
+
+        $this->assertSame(0, $work->votes_count);
+        $this->assertSame('voting', $work->status);
+        $this->assertFalse((bool) $work->is_published);
+        $this->assertDatabaseMissing('work_votes', [
+            'work_id' => $work->id,
+            'user_id' => $voter->id,
+        ]);
+    }
+
     public function test_member_can_vote_once_and_ten_votes_auto_publish_the_work(): void
     {
         [$memberRole] = $this->prepareVotingRole();
