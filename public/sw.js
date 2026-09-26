@@ -1,9 +1,11 @@
-const CACHE_NAME = "futurehope-pwa-v2";
+const CACHE_NAME = "futurehope-pwa-v3";
 const APP_SHELL = [
   "/",
   "/offline",
   "/android-chrome-192x192.png",
   "/android-chrome-512x512.png",
+  "/android-chrome-192x192-safe.svg",
+  "/android-chrome-512x512-safe.svg",
   "/apple-touch-icon.png",
   "/favicon-32x32.png",
   "/favicon-16x16.png",
