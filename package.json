@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader && vp build",
+        "build": "vp build",
         "dev": "vp dev"
     },
     "dependencies": {
