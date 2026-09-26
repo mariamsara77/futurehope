@@ -42,16 +42,9 @@ class WorkController extends Controller
         }
 
         $query
-            // Only active works are public: published works, or works still below
-            // the required vote threshold. Publication does not depend on status.
-            ->where(function ($q) {
-                $q->where('is_published', true)
-                    ->orWhere(function ($q) {
-                        $q->where('is_published', false)
-                            ->whereColumn('votes_count', '<', 'required_votes')
-                            ->where('status', '!=', 'rejected');
-                    });
-            })
+            // The public activity/work listing contains published works only.
+            // Unpublished works are available to approved members through /works/pending
+            // and to authorized viewers through /works/{work}/view.
             ->when($validated['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . trim($search) . '%')
@@ -113,7 +106,9 @@ class WorkController extends Controller
             $work->refresh();
         }
 
-        if (!$work->is_published && $work->status === 'rejected') {
+        // Never expose an unpublished work through the public detail endpoint.
+        // Members/owners use the authenticated /view endpoint instead.
+        if (!$work->is_published || $work->status === 'rejected') {
             return response()->json(['message' => 'কাজটি পাওয়া যায়নি।'], 404);
         }
 
