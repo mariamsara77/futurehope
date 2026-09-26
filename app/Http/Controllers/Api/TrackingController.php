@@ -28,13 +28,14 @@ class TrackingController extends Controller
 
         try {
             $ip = $this->resolveClientIp($request);
+            $authenticatedUserId = $this->authenticatedUserId($request);
 
             /** @var Visitor|null $visitor */
             $visitor = $request->attributes->get('current_visitor')
                 ?? $this->trackingService->getOrCreateVisitorFromData([
                     'ip'         => $ip,
                     'user_agent' => (string) $request->userAgent(),
-                    'user_id'    => Auth::id(),
+                    'user_id'    => $authenticatedUserId,
                     'is_pwa'     => $this->trackingService->resolveIsPwa($request),
                 ]);
 
@@ -52,6 +53,9 @@ class TrackingController extends Controller
 
             if ($hasInstalled || $isPwa) {
                 $updateData['has_installed_pwa'] = true;
+            }
+            if ($authenticatedUserId !== null) {
+                $updateData['user_id'] = $authenticatedUserId;
             }
 
             $visitor->update($updateData);
@@ -93,6 +97,7 @@ class TrackingController extends Controller
     {
         try {
             $ip = $this->resolveClientIp($request);
+            $authenticatedUserId = $this->authenticatedUserId($request);
 
             /** @var Visitor|null $visitor */
             $visitor = $request->attributes->get('current_visitor')
@@ -111,6 +116,14 @@ class TrackingController extends Controller
             $action   = $request->input('action', 'click');
             $payload  = $request->input('payload', []);
             $label    = $payload['label'] ?? $request->input('label');
+
+            if ($authenticatedUserId !== null) {
+                $visitor->forceFill([
+                    'user_id' => $authenticatedUserId,
+                    'last_seen_at' => now(),
+                ])->saveQuietly();
+                $payload['user_id'] = $authenticatedUserId;
+            }
 
             if ($category === 'system') {
                 $this->updateVisitorSpecs($request, $visitor, $payload, $ip);
@@ -132,6 +145,16 @@ class TrackingController extends Controller
 
             return response()->json(['status' => 'error'], 200);
         }
+    }
+
+    private function authenticatedUserId(Request $request): int|string|null
+    {
+        if ($request->user()) {
+            return $request->user()->getAuthIdentifier();
+        }
+
+        $user = Auth::guard('sanctum')->user();
+        return $user?->getAuthIdentifier();
     }
 
     /**
@@ -178,7 +201,7 @@ class TrackingController extends Controller
             'url'          => $url,
             'route_name'   => $this->guessRouteName($path, $payload['route_name'] ?? null),
             'referer'      => $payload['referrer'] ?? $request->headers->get('referer'),
-            'user_id'      => Auth::id(),
+            'user_id'      => $this->authenticatedUserId($request),
             'is_pwa'       => $this->trackingService->resolveIsPwa($request) || ! empty($payload['is_pwa']),
             'utm_source'   => $payload['utm_source'] ?? $request->query('utm_source'),
             'utm_medium'   => $payload['utm_medium'] ?? $request->query('utm_medium'),
