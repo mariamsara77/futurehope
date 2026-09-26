@@ -117,7 +117,15 @@ class VisitorTracker {
   }
 
   public setUserId(userId: number | string | null): void {
+    if (this.userId === userId) return;
     this.userId = userId;
+
+    // Keep the existing visitor/session IDs and tracking flow intact.
+    // When a user logs in, send one normal tracking event so the backend
+    // can associate the existing visitor record with users.id immediately.
+    if (userId !== null && userId !== undefined) {
+      this.trackEvent("system", "user_identified");
+    }
   }
 
   private withUserId(payload: TrackPayload): TrackPayload {
