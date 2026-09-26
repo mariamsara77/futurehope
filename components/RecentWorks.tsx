@@ -10,7 +10,7 @@ export default function RecentWorks() {
   useEffect(() => {
     let active = true;
     void getWorks({ perPage: 3 }).then((response) => {
-      if (active) setWorks(response.works ?? []);
+      if (active) setWorks((response.works ?? []).filter((work) => work.is_published));
     }).catch(() => {
       if (active) setWorks([]);
     });
