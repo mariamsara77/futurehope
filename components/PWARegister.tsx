@@ -174,6 +174,34 @@ export default function PWARegister() {
 
   const inAppBrowser = browser === "facebook" || browser === "instagram";
 
+  // Websites cannot reliably enumerate installed browsers. On Android/iOS we
+  // use OS-supported browser launch schemes; the OS handles availability.
+  const openSupportedBrowser = () => {
+    const currentUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(currentUrl);
+
+    if (platform === "android") {
+      window.location.href =
+        `intent://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodedUrl};end`;
+      return;
+    }
+
+    if (platform === "ios") {
+      window.location.href =
+        `x-safari-https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`;
+      return;
+    }
+
+    window.open(currentUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const supportedBrowserName =
+    platform === "android"
+      ? "Chrome"
+      : platform === "ios"
+        ? "Safari"
+        : "Chrome / Edge";
+
   const instructions = (() => {
     if (inAppBrowser) {
       return {
@@ -182,7 +210,7 @@ export default function PWARegister() {
           "Facebook বা Instagram-এর ভেতরের ব্রাউজারে PWA ইনস্টল করা যায় না।",
         steps: [
           "উপরের মেনু (⋮) খুলুন।",
-          "Open in External Browser, Chrome বা Safari নির্বাচন করুন।",
+          `Open in External Browser বা ${supportedBrowserName} নির্বাচন করুন।`,
           "ব্রাউজারে Future Hope খুলে আবার ‘অ্যাপ ইনস্টল করুন’ চাপুন।",
         ],
       };
@@ -364,12 +392,26 @@ export default function PWARegister() {
               ))}
             </ol>
 
+            {(inAppBrowser || browser === "firefox" || browser === "opera" || browser === "other") && (
+              <button
+                type="button"
+                onClick={openSupportedBrowser}
+                className="mt-6 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-[0.99]"
+              >
+                {platform === "android"
+                  ? "Chrome-এ খুলুন"
+                  : platform === "ios"
+                    ? "Safari-এ খুলুন"
+                    : "Supported Browser-এ খুলুন"}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="mt-6 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-[0.99]"
+              className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-bold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
             >
-              বুঝেছি
+              বন্ধ করুন
             </button>
           </div>
         </div>
