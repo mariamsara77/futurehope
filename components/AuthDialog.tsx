@@ -116,7 +116,7 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-zinc-700">পাসওয়ার্ড</span>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder="কমপক্ষে ৮ অক্ষর" />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "register" ? 8 : undefined} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder={mode === "login" ? "আপনার পাসওয়ার্ড" : "কমপক্ষে ৮ অক্ষর"} />
           </label>
           {mode === "register" && (
             <label className="block">
