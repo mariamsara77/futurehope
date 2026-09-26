@@ -156,14 +156,48 @@ export default function AuthDialog({ open, onClose }: { open: boolean; onClose: 
           {mode !== "forgot" && (
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-zinc-700">পাসওয়ার্ড</span>
-              <div className="relative">\n                <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "register" ? 8 : undefined} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder={mode === "login" ? "আপনার পাসওয়ার্ড" : "কমপক্ষে ৮ অক্ষর"} />\n                <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-500 transition hover:text-zinc-800" aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"} title={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}>\n                  {showPassword ? (\n                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">\n                      <path d="M3 3l18 18" />\n                      <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />\n                      <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.89c5.2 0 8.81 4.42 9.88 7.11a11.36 11.36 0 0 1-3.05 4.32" />\n                      <path d="M6.61 6.61C4.74 7.91 3.35 9.72 2.12 12c1.07 2.69 4.68 7.11 9.88 7.11 1.58 0 3-.35 4.24-.9" />\n                    </svg>\n                  ) : (\n                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">\n                      <path d="M2.12 12c1.07-2.69 4.68-7.11 9.88-7.11S20.81 9.31 21.88 12C20.81 14.69 17.2 19.11 12 19.11S3.19 14.69 2.12 12Z" />\n                      <circle cx="12" cy="12" r="2.7" />\n                    </svg>\n                  )}\n                </button>\n              </div>
+              <div className="relative">
+                <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "register" ? 8 : undefined} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder={mode === "login" ? "আপনার পাসওয়ার্ড" : "কমপক্ষে ৮ অক্ষর"} />
+                <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-500 transition hover:text-zinc-800" aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"} title={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}>
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                      <path d="M3 3l18 18" />
+                      <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
+                      <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.89c5.2 0 8.81 4.42 9.88 7.11a11.36 11.36 0 0 1-3.05 4.32" />
+                      <path d="M6.61 6.61C4.74 7.91 3.35 9.72 2.12 12c1.07 2.69 4.68 7.11 9.88 7.11 1.58 0 3-.35 4.24-.9" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                      <path d="M2.12 12c1.07-2.69 4.68-7.11 9.88-7.11S20.81 9.31 21.88 12C20.81 14.69 17.2 19.11 12 19.11S3.19 14.69 2.12 12Z" />
+                      <circle cx="12" cy="12" r="2.7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
           )}
 
           {mode === "register" && (
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-zinc-700">পাসওয়ার্ড নিশ্চিত করুন</span>
-              <div className="relative">\n                <input value={confirmation} onChange={(e) => setConfirmation(e.target.value)} type={showConfirmation ? "text" : "password"} autoComplete="new-password" required minLength={8} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder="পাসওয়ার্ড আবার লিখুন" />\n                <button type="button" onClick={() => setShowConfirmation((visible) => !visible)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-500 transition hover:text-zinc-800" aria-label={showConfirmation ? "নিশ্চিত পাসওয়ার্ড লুকান" : "নিশ্চিত পাসওয়ার্ড দেখান"} title={showConfirmation ? "নিশ্চিত পাসওয়ার্ড লুকান" : "নিশ্চিত পাসওয়ার্ড দেখান"}>\n                  {showConfirmation ? (\n                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">\n                      <path d="M3 3l18 18" />\n                      <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />\n                      <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.89c5.2 0 8.81 4.42 9.88 7.11a11.36 11.36 0 0 1-3.05 4.32" />\n                      <path d="M6.61 6.61C4.74 7.91 3.35 9.72 2.12 12c1.07 2.69 4.68 7.11 9.88 7.11 1.58 0 3-.35 4.24-.9" />\n                    </svg>\n                  ) : (\n                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">\n                      <path d="M2.12 12c1.07-2.69 4.68-7.11 9.88-7.11S20.81 9.31 21.88 12C20.81 14.69 17.2 19.11 12 19.11S3.19 14.69 2.12 12Z" />\n                      <circle cx="12" cy="12" r="2.7" />\n                    </svg>\n                  )}\n                </button>\n              </div>
+              <div className="relative">
+                <input value={confirmation} onChange={(e) => setConfirmation(e.target.value)} type={showConfirmation ? "text" : "password"} autoComplete="new-password" required minLength={8} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" placeholder="পাসওয়ার্ড আবার লিখুন" />
+                <button type="button" onClick={() => setShowConfirmation((visible) => !visible)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-500 transition hover:text-zinc-800" aria-label={showConfirmation ? "নিশ্চিত পাসওয়ার্ড লুকান" : "নিশ্চিত পাসওয়ার্ড দেখান"} title={showConfirmation ? "নিশ্চিত পাসওয়ার্ড লুকান" : "নিশ্চিত পাসওয়ার্ড দেখান"}>
+                  {showConfirmation ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                      <path d="M3 3l18 18" />
+                      <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83" />
+                      <path d="M9.88 5.09A10.94 10.94 0 0 1 12 4.89c5.2 0 8.81 4.42 9.88 7.11a11.36 11.36 0 0 1-3.05 4.32" />
+                      <path d="M6.61 6.61C4.74 7.91 3.35 9.72 2.12 12c1.07 2.69 4.68 7.11 9.88 7.11 1.58 0 3-.35 4.24-.9" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                      <path d="M2.12 12c1.07-2.69 4.68-7.11 9.88-7.11S20.81 9.31 21.88 12C20.81 14.69 17.2 19.11 12 19.11S3.19 14.69 2.12 12Z" />
+                      <circle cx="12" cy="12" r="2.7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
           )}
 
