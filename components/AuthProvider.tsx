@@ -50,8 +50,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       setUser(result.user);
       return result.user;
     }
+
     await refresh();
-    return null;
+    clearStoredToken();
+    throw new ApiError("লগইন সফল হয়নি। আবার চেষ্টা করুন।", 500);
   }, [refresh]);
 
   const googleLogin = useCallback(() => {
