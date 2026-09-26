@@ -138,7 +138,6 @@ function errorMessage(payload: ApiResponse, fallback: string) {
 async function request<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  // Let the browser set multipart boundaries for FormData uploads.
   if (init.body && !(typeof FormData !== "undefined" && init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -177,6 +176,11 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
   return payload as T;
 }
 
+const emptyWorks = (): PaginatedWorks => ({
+  works: [],
+  meta: { current_page: 1, last_page: 1, per_page: 0, total: 0 },
+});
+
 export async function getWorks(params: { page?: number; perPage?: number; search?: string; status?: string; categoryId?: number } = {}) {
   const query = new URLSearchParams();
   if (params.page) query.set("page", String(params.page));
@@ -184,13 +188,22 @@ export async function getWorks(params: { page?: number; perPage?: number; search
   if (params.search) query.set("search", params.search);
   if (params.status) query.set("status", params.status);
   if (params.categoryId) query.set("category_id", String(params.categoryId));
-  const payload = await request<PaginatedWorks>(`/works${query.toString() ? `?${query.toString()}` : ""}`, { method: "GET" }, Boolean(getStoredToken()));
-  return payload;
+  try {
+    return await request<PaginatedWorks>(`/works${query.toString() ? `?${query.toString()}` : ""}`, { method: "GET" }, Boolean(getStoredToken()));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0) return emptyWorks();
+    throw error;
+  }
 }
 
 export async function getPendingWorks() {
-  const payload = await request<{ works: Work[] }>("/works/pending", { method: "GET" }, true);
-  return payload.works;
+  try {
+    const payload = await request<{ works: Work[] }>("/works/pending", { method: "GET" }, true);
+    return payload.works;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0) return [];
+    throw error;
+  }
 }
 
 export async function getWork(id: number | string) {
@@ -221,13 +234,23 @@ export async function undoVoteWork(id: number | string) {
 }
 
 export async function getMembers() {
-  const payload = await request<{ members: Member[] }>("/members");
-  return payload.members;
+  try {
+    const payload = await request<{ members: Member[] }>("/members");
+    return payload.members;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0) return [];
+    throw error;
+  }
 }
 
 export async function getWorkCategories() {
-  const payload = await request<{ categories: WorkCategory[] }>("/categories");
-  return payload.categories;
+  try {
+    const payload = await request<{ categories: WorkCategory[] }>("/categories");
+    return payload.categories;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0) return [];
+    throw error;
+  }
 }
 
 export async function getProfile() {
@@ -249,8 +272,13 @@ export async function deleteAvatar() {
 }
 
 export async function getCategories() {
-  const payload = await request<{ categories: Category[] }>("/categories");
-  return payload.categories;
+  try {
+    const payload = await request<{ categories: Category[] }>("/categories");
+    return payload.categories;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0) return [];
+    throw error;
+  }
 }
 
 export async function submitWork(form: FormData) {
