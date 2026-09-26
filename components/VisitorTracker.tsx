@@ -6,6 +6,7 @@ import { getTracker, trackPageView, startNavigation } from "@/lib/tracker";
 
 export default function VisitorTracker() {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   useEffect(() => {
     getTracker().init();
@@ -21,6 +22,10 @@ export default function VisitorTracker() {
       window.removeEventListener("online", onOnline);
     };
   }, []);
+
+  useEffect(() => {
+    getTracker().setUserId(user?.id ?? null);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!pathname) return;
