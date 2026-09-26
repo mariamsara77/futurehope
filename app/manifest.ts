@@ -4,7 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "ফিউচার হোপ অ্যান্ড হিউম্যানিটি ফাউন্ডেশন",
     short_name: "ফিউচার হোপ",
-    description: "মানুষের পাশে থেকে একটি সুন্দর, মানবিক ও সম্ভাবনাময় ভবিষ্যৎ গড়ার উদ্যোগ।",
+    description:
+      "মানুষের পাশে থেকে একটি সুন্দর, মানবিক ও সম্ভাবনাময় ভবিষ্যৎ গড়ার উদ্যোগ।",
     id: "/",
     start_url: "/",
     scope: "/",
@@ -18,16 +19,16 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["social", "lifestyle", "education"],
     icons: [
       {
-        src: "/android-chrome-192x192-safe.svg",
+        src: "/android-chrome-192x192.png",
         sizes: "192x192",
-        type: "image/svg+xml",
-        purpose: "any",
+        type: "image/png",
+        purpose: "any maskable",
       },
       {
-        src: "/android-chrome-512x512-safe.svg",
+        src: "/android-chrome-512x512.png",
         sizes: "512x512",
-        type: "image/svg+xml",
-        purpose: "maskable",
+        type: "image/png",
+        purpose: "any maskable",
       },
     ],
     screenshots: [
@@ -57,19 +58,37 @@ export default function manifest(): MetadataRoute.Manifest {
         name: "কাজগুলো দেখুন",
         short_name: "কাজ",
         url: "/works",
-        icons: [{ src: "/android-chrome-192x192-safe.svg", sizes: "192x192", type: "image/svg+xml" }],
+        icons: [
+          {
+            src: "/android-chrome-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+        ],
       },
       {
         name: "কার্যক্রম দেখুন",
         short_name: "কার্যক্রম",
         url: "/activities",
-        icons: [{ src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" }],
+        icons: [
+          {
+            src: "/android-chrome-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+        ],
       },
       {
         name: "সদস্য দেখুন",
         short_name: "সদস্য",
         url: "/members",
-        icons: [{ src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" }],
+        icons: [
+          {
+            src: "/android-chrome-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+        ],
       },
     ],
   };
